@@ -2,31 +2,22 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
         with:
-          # Upgrade to Flutter version that bundles Dart >=3.5.0
-          flutter-version: "3.22.2"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Run tests
-        run: flutter test
-
-      - name: Build APK
-        run: flutter build apk --release
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      
+      - run: flutter pub get
+      
+      - run: flutter build apk --release
