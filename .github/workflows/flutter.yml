@@ -20,10 +20,7 @@ jobs:
       
       - run: flutter pub get
       
-      - name: Ensure platform folders exist
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android .
-          fi
+      - name: Create .env file
+        run: echo "PLACEHOLDER=1" > .env
       
       - run: flutter build apk --release
