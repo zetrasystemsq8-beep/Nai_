@@ -10,15 +10,12 @@ abstract class NewsRemoteDataSource {
 }
 
 class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
-  final Dio _dio = Dio();
-
   @override
   Future<List<NewsArticleModel>> getLatestNews({
     required int page,
     required int pageSize,
   }) async {
     try {
-      // Try backend first
       final response = await AppConfig.dio.get(
         '/news/latest',
         queryParameters: {
@@ -26,8 +23,8 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
           'pageSize': pageSize,
         },
         options: Options(
-          sendTimeout: const Duration(seconds: 3),
-          receiveTimeout: const Duration(seconds: 3),
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
         ),
       );
 
@@ -36,51 +33,10 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
               .toList() ??
           [];
           
-      if (articles.isNotEmpty) return articles;
+      return articles;
       
-      // If backend fails or returns empty, fallback to sample Nigerian news
-      return _getFallbackNews();
-      
-    } catch (_) {
-      // Backend unavailable – use fallback
-      return _getFallbackNews();
+    } catch (e) {
+      rethrow;
     }
-  }
-
-  List<NewsArticleModel> _getFallbackNews() {
-    return [
-      NewsArticleModel(
-        id: '1',
-        title: 'Nigeria\'s Economy Shows Growth in Q4 2025',
-        description: 'The National Bureau of Statistics reports positive economic indicators.',
-        source: 'NBS Nigeria',
-        publishedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        category: 'Economy',
-      ),
-      NewsArticleModel(
-        id: '2',
-        title: 'Lagos State Announces New Transportation Policy',
-        description: 'The Lagos State Government unveils new public transportation initiatives.',
-        source: 'Lagos State Government',
-        publishedAt: DateTime.now().subtract(const Duration(hours: 5)),
-        category: 'Government',
-      ),
-      NewsArticleModel(
-        id: '3',
-        title: 'Nigerian Tech Startups Raise \$100M in Funding',
-        description: 'African tech ecosystem continues to grow with Nigerian startups leading.',
-        source: 'TechCabal',
-        publishedAt: DateTime.now().subtract(const Duration(hours: 8)),
-        category: 'Technology',
-      ),
-      NewsArticleModel(
-        id: '4',
-        title: 'Super Eagles Prepare for African Cup of Nations',
-        description: 'Nigeria\'s national football team intensifies training for the upcoming tournament.',
-        source: 'Sports Nigeria',
-        publishedAt: DateTime.now().subtract(const Duration(hours: 12)),
-        category: 'Sports',
-      ),
-    ];
   }
 }
