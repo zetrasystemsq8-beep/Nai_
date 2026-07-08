@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:nai/src/config/app_config.dart';
 import '../models/government_service_model.dart';
 
@@ -6,30 +7,10 @@ abstract class GovernmentRemoteDataSource {
     required int page,
     required int pageSize,
   });
-
-  Future<List<GovernmentServiceModel>> searchServices({
-    required String query,
-    required int page,
-    required int pageSize,
-  });
-
-  Future<List<GovernmentServiceModel>> getServicesByCategory({
-    required String category,
-    required int page,
-    required int pageSize,
-  });
-
-  Future<List<GovernmentServiceModel>> getPopularServices({
-    required int limit,
-  });
-
-  Future<GovernmentServiceModel> getServiceDetails(String serviceId);
-
-  Future<List<String>> getCategories();
 }
 
 class GovernmentRemoteDataSourceImpl implements GovernmentRemoteDataSource {
-  GovernmentRemoteDataSourceImpl();
+  final Dio _dio = Dio();
 
   @override
   Future<List<GovernmentServiceModel>> getAllServices({
@@ -37,126 +18,75 @@ class GovernmentRemoteDataSourceImpl implements GovernmentRemoteDataSource {
     required int pageSize,
   }) async {
     try {
+      // Try backend first
       final response = await AppConfig.dio.get(
         '/government/services',
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
         },
+        options: Options(
+          sendTimeout: const Duration(seconds: 3),
+          receiveTimeout: const Duration(seconds: 3),
+        ),
       );
 
       final services = (response.data['data'] as List?)
-              ?.map((e) =>
-                  GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
+              ?.map((e) => GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
-      return services;
-    } catch (e) {
-      rethrow;
+          
+      if (services.isNotEmpty) return services;
+      
+      return _getFallbackServices();
+      
+    } catch (_) {
+      return _getFallbackServices();
     }
   }
 
-  @override
-  Future<List<GovernmentServiceModel>> searchServices({
-    required String query,
-    required int page,
-    required int pageSize,
-  }) async {
-    try {
-      final response = await AppConfig.dio.get(
-        '/government/services/search',
-        queryParameters: {
-          'q': query,
-          'page': page,
-          'pageSize': pageSize,
-        },
-      );
-
-      final services = (response.data['data'] as List?)
-              ?.map((e) =>
-                  GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-      return services;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<GovernmentServiceModel>> getServicesByCategory({
-    required String category,
-    required int page,
-    required int pageSize,
-  }) async {
-    try {
-      final response = await AppConfig.dio.get(
-        '/government/services/category/$category',
-        queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-        },
-      );
-
-      final services = (response.data['data'] as List?)
-              ?.map((e) =>
-                  GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-      return services;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<GovernmentServiceModel>> getPopularServices({
-    required int limit,
-  }) async {
-    try {
-      final response = await AppConfig.dio.get(
-        '/government/services/popular',
-        queryParameters: {'limit': limit},
-      );
-
-      final services = (response.data['data'] as List?)
-              ?.map((e) =>
-                  GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-      return services;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<GovernmentServiceModel> getServiceDetails(String serviceId) async {
-    try {
-      final response = await AppConfig.dio.get(
-        '/government/services/$serviceId',
-      );
-
-      final service = GovernmentServiceModel.fromJson(
-          response.data['data'] as Map<String, dynamic>);
-      return service;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<String>> getCategories() async {
-    try {
-      final response = await AppConfig.dio.get(
-        '/government/categories',
-      );
-
-      final categories = List<String>.from(
-          response.data['data'] as List? ?? []);
-      return categories;
-    } catch (e) {
-      rethrow;
-    }
+  List<GovernmentServiceModel> _getFallbackServices() {
+    return [
+      GovernmentServiceModel(
+        id: '1',
+        name: 'NIN Registration',
+        description: 'National Identification Number registration and management.',
+        category: 'Identity',
+        url: 'https://nimc.gov.ng',
+        icon: 'badge',
+      ),
+      GovernmentServiceModel(
+        id: '2',
+        name: 'Passport Application',
+        description: 'Apply for or renew your Nigerian passport.',
+        category: 'Travel',
+        url: 'https://immigration.gov.ng',
+        icon: 'travel',
+      ),
+      GovernmentServiceModel(
+        id: '3',
+        name: 'Tax Filing',
+        description: 'File your taxes online with the Federal Inland Revenue Service.',
+        category: 'Finance',
+        url: 'https://firs.gov.ng',
+        icon: 'payments',
+      ),
+      GovernmentServiceModel(
+        id: '4',
+        name: 'Business Registration',
+        description: 'Register your business with the Corporate Affairs Commission.',
+        category: 'Business',
+        url: 'https://cac.gov.ng',
+        icon: 'store',
+      ),
+      GovernmentServiceModel(
+        id: '5',
+        name: 'Driver\'s License',
+        description: 'Apply for or renew your driver\'s license.',
+        category: 'Transport',
+        url: 'https://frsc.gov.ng',
+        icon: 'directions_car',
+      ),
+    ];
   }
 }
