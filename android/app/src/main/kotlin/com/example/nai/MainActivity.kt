@@ -1,4 +1,4 @@
-package com.example.nai
+package com.zetrasystems.nai
 
 import io.flutter.embedding.android.FlutterActivity
 
