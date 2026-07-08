@@ -1,6 +1,5 @@
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
-
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -32,11 +31,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     Future<void> handleLogin() async {
       if (!(_formKey.currentState?.validate() ?? false)) return;
-      
 
       ref.read(authControllerProvider.notifier).login(
-        context: context, 
-        email: _emailController.text, 
+        context: context,
+        email: _emailController.text,
         password: _passwordController.text,
       );
     }
@@ -100,7 +98,6 @@ class _LoginView extends StatelessWidget {
                   style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 SizedBox(height: AppSpacing.xxxl.h),
-                // Form Card
                 Form(
                   key: formKey,
                   child: Column(
@@ -131,7 +128,7 @@ class _LoginView extends StatelessWidget {
                           icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
                           onPressed: onToggleObscure,
                         ),
-                         validator: (v) {
+                        validator: (v) {
                           if (AppUtils.isBlank(v)) {
                             return 'auth.password_required'.tr();
                           }
@@ -246,10 +243,17 @@ class _LoginView extends StatelessWidget {
                     SizedBox(height: AppSpacing.xl.h),
                   ],
                 ),
-                InkWell(
-                  onTap: () {
+                // FIXED SIGN UP BUTTON - TextButton instead of InkWell
+                TextButton(
+                  onPressed: () {
+                    print("🔵 Sign Up tapped");
                     context.push(AppRoutes.signup);
                   },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: RichText(
                     text: TextSpan(
                       text: 'auth.dont_have_account'.tr(),
