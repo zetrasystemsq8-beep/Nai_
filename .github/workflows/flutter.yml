@@ -9,28 +9,32 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.5'
           channel: 'stable'
-      
+
       - run: flutter pub get
-      
+
       - name: Create .env file
         run: echo "PLACEHOLDER=1" > .env
-      
+
       - name: Ensure platform folders exist
         run: |
           if [ ! -d "android" ]; then
             flutter create --platforms=android .
           fi
-      
+
+      - name: Set NAI app label
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="NAI"/' android/app/src/main/AndroidManifest.xml
+
       - run: flutter build apk --release
-      
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
