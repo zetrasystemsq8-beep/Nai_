@@ -21,3 +21,8 @@ export '../features/auth/presentation/screens/signup_screen.dart';
 export '../features/auth/presentation/screens/forgot_password_screen.dart';
 export '../features/home/presentation/screens/home_page.dart';
 export '../features/onboarding/presentation/screens/onboarding_page.dart';
+
+// Nigeria Features
+export '../features/nigeria/presentation/screens/nigeria_news_screen.dart';
+export '../features/nigeria/presentation/screens/government_services_screen.dart';
+export '../features/nigeria/presentation/screens/wiki_search_screen.dart';
