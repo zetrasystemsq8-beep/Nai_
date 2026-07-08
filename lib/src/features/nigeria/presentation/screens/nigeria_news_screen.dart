@@ -32,8 +32,8 @@ class NigeriaNewsScreen extends ConsumerWidget {
                     article: articles[index],
                     onTap: () {
                       showGlobalToast(
-                        title: articles[index].title,
                         message: 'Opened from news feed',
+                        status: 'success',
                       );
                     },
                   ),
@@ -41,7 +41,8 @@ class NigeriaNewsScreen extends ConsumerWidget {
           loading: () => const Center(child: AppLoading()),
           error: (error, stack) => Center(
             child: AppErrorWidget(
-              error: error.toString(),
+              title: 'Error loading news',
+              message: error.toString(),
               onRetry: () => ref.refresh(latestNewsProvider),
             ),
           ),

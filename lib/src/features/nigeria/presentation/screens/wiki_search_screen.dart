@@ -77,8 +77,8 @@ class _WikiSearchScreenState extends ConsumerState<WikiSearchScreen> {
                             entry: entries[index],
                             onTap: () {
                               showGlobalToast(
-                                title: entries[index].title,
                                 message: 'Wiki entry selected',
+                                status: 'success',
                               );
                             },
                           ),
@@ -86,7 +86,8 @@ class _WikiSearchScreenState extends ConsumerState<WikiSearchScreen> {
                   loading: () => const Center(child: AppLoading()),
                   error: (error, stack) => Center(
                     child: AppErrorWidget(
-                      error: error.toString(),
+                      title: 'Error loading wiki',
+                      message: error.toString(),
                       onRetry: () =>
                           ref.refresh(searchWikiProvider(_searchController.text)),
                     ),

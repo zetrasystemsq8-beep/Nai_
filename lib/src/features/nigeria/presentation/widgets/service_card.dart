@@ -73,7 +73,7 @@ class ServiceCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            IconsaxPlusLinear.star1,
+                            IconsaxPlusBold.star,
                             size: 14.sp,
                             color: const Color(0xFFFFB800),
                           ),
@@ -118,7 +118,7 @@ class ServiceCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant,
-                      borderRadius: AppBorders.pill,
+                      borderRadius: AppBorders.full,
                     ),
                     child: Text(
                       tag,

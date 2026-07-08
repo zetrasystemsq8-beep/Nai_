@@ -31,8 +31,8 @@ class GovernmentServicesScreen extends ConsumerWidget {
                     service: serviceList[index],
                     onTap: () {
                       showGlobalToast(
-                        title: serviceList[index].name,
                         message: 'Service selected',
+                        status: 'success',
                       );
                     },
                   ),
@@ -40,7 +40,8 @@ class GovernmentServicesScreen extends ConsumerWidget {
           loading: () => const Center(child: AppLoading()),
           error: (error, stack) => Center(
             child: AppErrorWidget(
-              error: error.toString(),
+              title: 'Error loading services',
+              message: error.toString(),
               onRetry: () => ref.refresh(allServicesProvider),
             ),
           ),

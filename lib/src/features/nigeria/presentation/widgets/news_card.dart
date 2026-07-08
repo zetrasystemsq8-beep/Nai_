@@ -54,7 +54,7 @@ class NewsCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: colorScheme.primary.withOpacity(0.1),
-                          borderRadius: AppBorders.pill,
+                          borderRadius: AppBorders.full,
                         ),
                         child: Text(
                           article.category,
@@ -108,7 +108,7 @@ class NewsCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        article.publishedAt.formatDate(),
+                        article.publishedAt.toIso8601String().split('T').first,
                         style: textTheme.labelSmall?.copyWith(
                           color: colorScheme.outline,
                         ),

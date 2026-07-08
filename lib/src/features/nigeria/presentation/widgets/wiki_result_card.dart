@@ -53,7 +53,7 @@ class WikiResultCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: colorScheme.primaryContainer,
-                          borderRadius: AppBorders.pill,
+                          borderRadius: AppBorders.full,
                         ),
                         child: Text(
                           entry.category,
@@ -98,7 +98,7 @@ class WikiResultCard extends StatelessWidget {
                 ),
                 SizedBox(width: AppSpacing.xs.w),
                 Text(
-                  entry.lastUpdated.formatDate(),
+                  entry.lastUpdated.toIso8601String().split('T').first,
                   style: textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
