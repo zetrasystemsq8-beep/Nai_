@@ -7,6 +7,25 @@ abstract class WikiRemoteDataSource {
     required int page,
     required int pageSize,
   });
+
+  Future<List<WikiEntryModel>> getEntriesByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<WikiEntryModel>> getFeaturedEntries({
+    required int limit,
+  });
+
+  Future<WikiEntryModel> getEntryDetails(String entryId);
+
+  Future<List<WikiEntryModel>> getRelatedEntries({
+    required String entryId,
+    required int limit,
+  });
+
+  Future<List<String>> getWikiCategories();
 }
 
 class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
@@ -39,10 +58,140 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
           id: e['pageid']?.toString() ?? '',
           title: e['title'] ?? 'Untitled',
           snippet: e['snippet']?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-          url: 'https://en.wikipedia.org/?curid=${e['pageid']}',
-          category: 'Wikipedia',
         );
       }).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<WikiEntryModel>> getEntriesByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      // Wikipedia doesn't have categories like this, so search with category term
+      return await searchWiki(
+        query: category,
+        page: page,
+        pageSize: pageSize,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<WikiEntryModel>> getFeaturedEntries({
+    required int limit,
+  }) async {
+    try {
+      final response = await _dio.get(
+        'https://en.wikipedia.org/w/api.php',
+        queryParameters: {
+          'action': 'query',
+          'list': 'random',
+          'rnlimit': limit,
+          'format': 'json',
+          'utf8': '1',
+        },
+      );
+
+      final results = response.data['query']['random'] as List? ?? [];
+      
+      return results.map((e) {
+        return WikiEntryModel(
+          id: e['id']?.toString() ?? '',
+          title: e['title'] ?? 'Untitled',
+          snippet: 'Random Wikipedia article about Nigeria.',
+        );
+      }).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<WikiEntryModel> getEntryDetails(String entryId) async {
+    try {
+      final response = await _dio.get(
+        'https://en.wikipedia.org/w/api.php',
+        queryParameters: {
+          'action': 'query',
+          'pageids': entryId,
+          'prop': 'extracts|info',
+          'exintro': 'true',
+          'explaintext': 'true',
+          'format': 'json',
+          'utf8': '1',
+        },
+      );
+
+      final pages = response.data['query']['pages'] as Map<String, dynamic>;
+      final page = pages[entryId] as Map<String, dynamic>;
+      
+      return WikiEntryModel(
+        id: entryId,
+        title: page['title'] ?? 'Untitled',
+        snippet: page['extract'] ?? 'No description available.',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<WikiEntryModel>> getRelatedEntries({
+    required String entryId,
+    required int limit,
+  }) async {
+    try {
+      // Get page title first
+      final detailResponse = await _dio.get(
+        'https://en.wikipedia.org/w/api.php',
+        queryParameters: {
+          'action': 'query',
+          'pageids': entryId,
+          'prop': 'info',
+          'format': 'json',
+          'utf8': '1',
+        },
+      );
+
+      final pages = detailResponse.data['query']['pages'] as Map<String, dynamic>;
+      final page = pages[entryId] as Map<String, dynamic>;
+      final title = page['title'] ?? '';
+
+      // Search for related articles
+      return await searchWiki(
+        query: title,
+        page: 1,
+        pageSize: limit,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<String>> getWikiCategories() async {
+    try {
+      final response = await _dio.get(
+        'https://en.wikipedia.org/w/api.php',
+        queryParameters: {
+          'action': 'query',
+          'list': 'allcategories',
+          'aclimit': 20,
+          'format': 'json',
+          'utf8': '1',
+        },
+      );
+
+      final categories = response.data['query']['allcategories'] as List? ?? [];
+      
+      return categories.map((e) => e['*'] as String? ?? '').toList();
     } catch (e) {
       rethrow;
     }
