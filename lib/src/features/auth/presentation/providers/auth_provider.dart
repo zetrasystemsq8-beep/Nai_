@@ -37,7 +37,7 @@ class AuthController extends StateNotifier<bool> {
       },
       (user) {
         if (rootContext?.mounted ?? false) {
-          rootContext!.go(AppRoutes.home);
+          rootContext!.pushReplacement(AppRoutes.home);
         }
       },
     );
@@ -57,7 +57,7 @@ class AuthController extends StateNotifier<bool> {
       },
       (user) {
         if (rootContext?.mounted ?? false) {
-          rootContext!.go(AppRoutes.home);
+          rootContext!.pushReplacement(AppRoutes.home);
         }
       },
     );
@@ -86,4 +86,3 @@ class AuthController extends StateNotifier<bool> {
     );
   }
 }
-
