@@ -345,26 +345,42 @@ ThemeData _buildTheme(ColorScheme colorScheme, AppColorsExtension customColors) 
   );
 }
 
+/// NAI brand seed color — Nigerian flag green.
+const String _naiGreenHex = '#008751';
+
 ThemeData buildLightTheme({required String primaryColorHex}) {
-  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#6750A4');
-  final colorScheme = ColorScheme.fromSeed(
+  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : _naiGreenHex);
+  final baseScheme = ColorScheme.fromSeed(
     seedColor: seed,
     brightness: Brightness.light,
+  );
+  final colorScheme = baseScheme.copyWith(
+    primary: const Color(0xFF008751),
+    secondary: Colors.white,
+    onSecondary: const Color(0xFF008751),
   );
   return _buildTheme(colorScheme, AppPalettes.light);
 }
 
 ThemeData buildDarkTheme({required String primaryColorHex}) {
-  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#6750A4');
-  final colorScheme = ColorScheme.fromSeed(
+  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : _naiGreenHex);
+  final baseScheme = ColorScheme.fromSeed(
     seedColor: seed,
     brightness: Brightness.dark,
+  );
+  final colorScheme = baseScheme.copyWith(
+    primary: const Color(0xFF008751),
+    secondary: Colors.white,
+    onSecondary: const Color(0xFF008751),
+    surface: const Color(0xFF0F1115),
+    surfaceContainerLow: const Color(0xFF14171C),
+    surfaceContainerHighest: const Color(0xFF1C2026),
   );
   return _buildTheme(colorScheme, AppPalettes.dark);
 }
 
 CupertinoThemeData buildCupertinoTheme({required String primaryColorHex}) {
-  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#007AFF');
+  final seed = _colorFromHex(primaryColorHex.isNotEmpty ? primaryColorHex : '#008751');
 
   return CupertinoThemeData(
     applyThemeToAll: true,
@@ -417,4 +433,3 @@ CupertinoThemeData buildCupertinoTheme({required String primaryColorHex}) {
     ),
   );
 }
-
