@@ -108,12 +108,12 @@ class _SignupView extends StatelessWidget {
               children: [
                 SizedBox(height: AppSpacing.xl.h),
                 Text(
-                  'auth.sign_up'.tr(),
+                  'auth.create_account'.tr(),
                   style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: AppSpacing.sm.h),
                 Text(
-                  'auth.sign_up_subtitle'.tr(),
+                  'auth.create_account_subtitle'.tr(),
                   textAlign: TextAlign.center,
                   style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                 ),
@@ -194,7 +194,7 @@ class _SignupView extends StatelessWidget {
                       ),
                       SizedBox(height: AppSpacing.lg.h),
                       AppButton(
-                        label: 'Sign Up',
+                        label: 'auth.create_account_button'.tr(),
                         isLoading: isLoading,
                         onPressed: isLoading ? null : onSignup,
                         width: ButtonSize.large,
@@ -214,7 +214,7 @@ class _SignupView extends StatelessWidget {
                       style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                       children: [
                         TextSpan(
-                          text: 'auth.log_in'.tr(),
+                          text: 'auth.sign_in'.tr(),
                           style: TextStyle(
                             color: cs.primary,
                             fontWeight: FontWeight.bold,
