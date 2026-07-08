@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
@@ -23,12 +24,23 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Toggle dark theme',
                   trailing: Switch(
                     value: context.isDarkMode,
-                    onChanged: (_) {},
+                    onChanged: (_) {
+                      showGlobalToast(
+                        message: 'Theme toggle (coming soon)',
+                        status: 'info',
+                      );
+                    },
                   ),
                 ),
                 _SettingItem(
                   title: 'Font Size',
                   subtitle: 'Adjust text size',
+                  onTap: () {
+                    showGlobalToast(
+                      message: 'Font size settings (coming soon)',
+                      status: 'info',
+                    );
+                  },
                 ),
               ],
             ),
@@ -39,11 +51,22 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingItem(
                   title: 'Clear Chat History',
                   subtitle: 'Delete all conversations',
-                  onTap: () {},
+                  onTap: () {
+                    showGlobalToast(
+                      message: 'Chat history cleared',
+                      status: 'success',
+                    );
+                  },
                 ),
                 _SettingItem(
                   title: 'Data & Privacy',
                   subtitle: 'Manage your data',
+                  onTap: () {
+                    showGlobalToast(
+                      message: 'Privacy settings (coming soon)',
+                      status: 'info',
+                    );
+                  },
                 ),
               ],
             ),
@@ -58,6 +81,12 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingItem(
                   title: 'Terms of Service',
                   subtitle: 'Read our terms',
+                  onTap: () {
+                    showGlobalToast(
+                      message: 'Terms of Service (opening)',
+                      status: 'info',
+                    );
+                  },
                 ),
               ],
             ),
@@ -130,7 +159,10 @@ class _SettingItem extends StatelessWidget {
           color: colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: trailing ?? const Icon(IconsaxPlusLinear.arrow_right_3),
+      trailing: trailing ?? Icon(
+        IconsaxPlusLinear.arrow_right_3,
+        color: colorScheme.onSurfaceVariant,
+      ),
       onTap: onTap,
     );
   }

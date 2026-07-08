@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
@@ -65,7 +66,12 @@ class ProfileScreen extends ConsumerWidget {
               SizedBox(height: AppSpacing.xxl.h),
               AppButton(
                 label: 'Edit Profile',
-                onPressed: () {},
+                onPressed: () {
+                  showGlobalToast(
+                    message: 'Edit profile (coming soon)',
+                    status: 'info',
+                  );
+                },
                 isFullWidth: true,
                 variant: ButtonVariant.primary,
               ),

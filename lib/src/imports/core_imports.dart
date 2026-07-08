@@ -26,3 +26,8 @@ export '../features/onboarding/presentation/screens/onboarding_page.dart';
 export '../features/nigeria/presentation/screens/nigeria_news_screen.dart';
 export '../features/nigeria/presentation/screens/government_services_screen.dart';
 export '../features/nigeria/presentation/screens/wiki_search_screen.dart';
+
+// Phase 3 Features
+export '../features/settings/presentation/screens/settings_screen.dart';
+export '../features/profile/presentation/screens/profile_screen.dart';
+export '../features/search/presentation/screens/search_screen.dart';

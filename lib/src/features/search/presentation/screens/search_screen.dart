@@ -1,16 +1,16 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   late TextEditingController _searchController;
-  bool _isSearching = false;
 
   @override
   void initState() {
@@ -31,6 +31,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
       appBar: const AppTopBar(title: 'Search'),
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -50,20 +51,21 @@ class _SearchScreenState extends State<SearchScreen> {
                     vertical: AppSpacing.sm.h,
                   ),
                 ),
+                onChanged: (_) => setState(() {}),
               ),
             ),
             Expanded(
               child: _searchController.text.isEmpty
                   ? Center(
-                      child: Text(
-                        'Enter a search query',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      child: AppEmptyState(
+                        title: 'Start Searching',
+                        subtitle: 'Search chats, news, government services, and more',
                       ),
                     )
-                  : const Center(
-                      child: AppLoading(),
+                  : Center(
+                      child: AppLoading(
+                        message: 'Searching...',
+                      ),
                     ),
             ),
           ],

@@ -14,4 +14,7 @@ abstract final class AppRoutes {
   static const String nigeriaNews = '/nigeria-news';
   static const String governmentServices = '/government-services';
   static const String wikiSearch = '/wiki-search';
+  static const String settings = '/settings';
+  static const String profile = '/profile';
+  static const String search = '/search';
 }

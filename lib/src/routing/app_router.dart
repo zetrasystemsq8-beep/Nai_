@@ -11,6 +11,9 @@ import 'package:nai/src/features/onboarding/presentation/screens/onboarding_page
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
 import 'package:nai/src/features/nigeria/presentation/screens/government_services_screen.dart';
 import 'package:nai/src/features/nigeria/presentation/screens/wiki_search_screen.dart';
+import 'package:nai/src/features/settings/presentation/screens/settings_screen.dart';
+import 'package:nai/src/features/profile/presentation/screens/profile_screen.dart';
+import 'package:nai/src/features/search/presentation/screens/search_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
@@ -55,6 +58,21 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.wikiSearch,
       name: 'wikiSearch',
       builder: (context, state) => const WikiSearchScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.settings,
+      name: 'settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.profile,
+      name: 'profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.search,
+      name: 'search',
+      builder: (context, state) => const SearchScreen(),
     ),
   ],
 );
