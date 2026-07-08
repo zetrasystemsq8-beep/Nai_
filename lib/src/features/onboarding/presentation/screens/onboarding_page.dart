@@ -104,7 +104,7 @@ class _OnboardingView extends StatelessWidget {
                 bottom: AppSpacing.md.h,
               ),
               child: Text(
-                'FlutterInit.',
+                'NAI',
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: colorScheme.onSurface,
@@ -133,7 +133,7 @@ class _OnboardingView extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
+
                       // Text Section
                       Padding(
                         padding: EdgeInsets.symmetric(
