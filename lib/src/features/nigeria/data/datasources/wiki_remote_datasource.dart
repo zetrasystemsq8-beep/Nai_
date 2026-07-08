@@ -71,16 +71,12 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
     required int page,
     required int pageSize,
   }) async {
-    try {
-      // Wikipedia doesn't have categories like this, so search with category term
-      return await searchWiki(
-        query: category,
-        page: page,
-        pageSize: pageSize,
-      );
-    } catch (e) {
-      rethrow;
-    }
+    // Uses the same Wikipedia search API with category as query
+    return await searchWiki(
+      query: category,
+      page: page,
+      pageSize: pageSize,
+    );
   }
 
   @override
@@ -105,7 +101,7 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
         return WikiEntryModel(
           id: e['id']?.toString() ?? '',
           title: e['title'] ?? 'Untitled',
-          snippet: 'Random Wikipedia article about Nigeria.',
+          snippet: 'Wikipedia article',
         );
       }).toList();
     } catch (e) {
@@ -148,7 +144,7 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
     required int limit,
   }) async {
     try {
-      // Get page title first
+      // First get the page title
       final detailResponse = await _dio.get(
         'https://en.wikipedia.org/w/api.php',
         queryParameters: {
