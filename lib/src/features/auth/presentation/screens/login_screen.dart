@@ -180,7 +180,7 @@ class _LoginView extends StatelessWidget {
                       ),
                       SizedBox(height: AppSpacing.lg.h),
                       AppButton(
-                        label: 'Sign In',
+                        label: 'auth.login_button'.tr(),
                         isLoading: isLoading,
                         onPressed: isLoading ? null : onLogin,
                         width: ButtonSize.large,
