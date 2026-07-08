@@ -52,12 +52,17 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
       );
 
       final searchResults = response.data['query']['search'] as List? ?? [];
-      
+
       return searchResults.map((e) {
         return WikiEntryModel(
           id: e['pageid']?.toString() ?? '',
           title: e['title'] ?? 'Untitled',
-          snippet: e['snippet']?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+          description: (e['snippet'] as String? ?? '').replaceAll(RegExp(r'<[^>]*>'), ''),
+          content: '',
+          keywords: const [],
+          imageUrl: '',
+          lastUpdated: DateTime.now(),
+          category: '',
         );
       }).toList();
     } catch (e) {
@@ -96,12 +101,17 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
       );
 
       final results = response.data['query']['random'] as List? ?? [];
-      
+
       return results.map((e) {
         return WikiEntryModel(
           id: e['id']?.toString() ?? '',
           title: e['title'] ?? 'Untitled',
-          snippet: 'Wikipedia article',
+          description: 'Wikipedia article',
+          content: '',
+          keywords: const [],
+          imageUrl: '',
+          lastUpdated: DateTime.now(),
+          category: '',
         );
       }).toList();
     } catch (e) {
@@ -127,11 +137,18 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
 
       final pages = response.data['query']['pages'] as Map<String, dynamic>;
       final page = pages[entryId] as Map<String, dynamic>;
-      
+
+      final extract = page['extract'] as String? ?? 'No description available.';
+
       return WikiEntryModel(
         id: entryId,
         title: page['title'] ?? 'Untitled',
-        snippet: page['extract'] ?? 'No description available.',
+        description: extract.length > 200 ? '${extract.substring(0, 200)}...' : extract,
+        content: extract,
+        keywords: const [],
+        imageUrl: '',
+        lastUpdated: DateTime.now(),
+        category: '',
       );
     } catch (e) {
       rethrow;
@@ -186,7 +203,7 @@ class WikiRemoteDataSourceImpl implements WikiRemoteDataSource {
       );
 
       final categories = response.data['query']['allcategories'] as List? ?? [];
-      
+
       return categories.map((e) => e['*'] as String? ?? '').toList();
     } catch (e) {
       rethrow;
