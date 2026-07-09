@@ -18,32 +18,44 @@
     "home_subtitle": "Nigeria's AI Assistant is ready to help you."
   },
   "auth": {
-    "log_in": "Welcome Back",
-    "log_in_subtitle": "Sign in to continue to NAI",
-    "email": "Email",
+    "log_in": "Welcome to NAI",
+    "log_in_subtitle": "Nigeria's AI Assistant",
+
+    "email": "Email address",
     "email_required": "Email is required",
-    "email_invalid": "Enter a valid email",
+    "email_invalid": "Enter a valid email address",
+
     "password": "Password",
     "password_required": "Password is required",
     "password_too_short": "Password must be at least 6 characters",
+
     "remember_me": "Remember me",
-    "forgot_password": "Forgot Password",
+    "forgot_password": "Forgot password?",
+
     "login_button": "Continue",
-    "dont_have_account": "Don't have an account? ",
-    "sign_up": "Sign Up",
-    "create_account": "Create NAI Account",
+
+    "dont_have_account": "New to NAI? ",
+    "sign_up": "Create one",
+
+    "create_account": "Create your NAI account",
     "create_account_subtitle": "Join Nigeria's AI Assistant",
-    "name": "Name",
-    "name_required": "Name is required",
-    "confirm_password": "Confirm Password",
-    "confirm_password_required": "Confirm password is required",
+
+    "name": "Full name",
+    "name_required": "Full name is required",
+
+    "confirm_password": "Confirm password",
+    "confirm_password_required": "Please confirm your password",
     "passwords_do_not_match": "Passwords do not match",
+
     "create_account_button": "Create Account",
-    "already_have_account": "Already using NAI? ",
-    "sign_in": "Sign In",
-    "or_continue_with": "Or Continue With Account",
-    "forgot_password_title": "Forgot Password",
-    "forgot_password_subtitle": "Enter your email address to receive a reset link\nand regain access to your account.",
-    "reset_link_sent": "Password reset link sent to your email."
+
+    "already_have_account": "Already have an account? ",
+    "sign_in": "Sign in",
+
+    "or_continue_with": "Or continue with",
+
+    "forgot_password_title": "Reset Password",
+    "forgot_password_subtitle": "Enter your email address and we'll send you a password reset link.",
+    "reset_link_sent": "Password reset email sent."
   }
 }
