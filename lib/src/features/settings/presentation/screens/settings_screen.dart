@@ -2,13 +2,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
+import 'package:nai/src/features/settings/presentation/providers/theme_provider.dart';
+import 'package:nai/src/features/chat/data/chat_history_store.dart';
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
+  Future<void> _confirmClearHistory(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear Chat History'),
+        content: const Text(
+          'This will permanently delete all your saved conversations. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ChatHistoryStore().clearAll();
+      if (context.mounted) {
+        showGlobalToast(message: 'Chat history cleared', status: 'success');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = context.theme.colorScheme;
-    final textTheme = context.theme.textTheme;
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system && context.isDarkMode);
 
     return Scaffold(
       appBar: const AppTopBar(title: 'Settings'),
@@ -23,12 +56,9 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Dark Mode',
                   subtitle: 'Toggle dark theme',
                   trailing: Switch(
-                    value: context.isDarkMode,
-                    onChanged: (_) {
-                      showGlobalToast(
-                        message: 'Theme toggle (coming soon)',
-                        status: 'info',
-                      );
+                    value: isDark,
+                    onChanged: (value) {
+                      ref.read(themeModeProvider.notifier).toggleDarkMode(value);
                     },
                   ),
                 ),
@@ -51,12 +81,7 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingItem(
                   title: 'Clear Chat History',
                   subtitle: 'Delete all conversations',
-                  onTap: () {
-                    showGlobalToast(
-                      message: 'Chat history cleared',
-                      status: 'success',
-                    );
-                  },
+                  onTap: () => _confirmClearHistory(context, ref),
                 ),
                 _SettingItem(
                   title: 'Data & Privacy',
@@ -83,7 +108,7 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Read our terms',
                   onTap: () {
                     showGlobalToast(
-                      message: 'Terms of Service (opening)',
+                      message: 'Terms of Service (coming soon)',
                       status: 'info',
                     );
                   },
