@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:nai/src/config/app_config.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/news_article_model.dart';
 
 abstract class NewsRemoteDataSource {
@@ -27,6 +27,32 @@ abstract class NewsRemoteDataSource {
 }
 
 class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
+  final Dio _dio = Dio();
+
+  static const _baseUrl = 'https://newsapi.org/v2';
+
+  // Nigerian-focused sources available on NewsAPI's source list.
+  static const _nigerianSources =
+      'the-guardian-nigeria,premium-times-nigeria,punch-newspapers,vanguard-news';
+
+  String get _apiKey => dotenv.env['NEWS_API_KEY'] ?? '';
+
+  NewsArticleModel _mapArticle(Map<String, dynamic> json, {String category = ''}) {
+    final url = json['url'] as String? ?? '';
+    return NewsArticleModel(
+      id: url.isNotEmpty ? url.hashCode.toString() : DateTime.now().millisecondsSinceEpoch.toString(),
+      title: json['title'] as String? ?? 'Untitled',
+      description: json['description'] as String? ?? '',
+      content: json['content'] as String? ?? json['description'] as String? ?? '',
+      source: (json['source'] as Map<String, dynamic>?)?['name'] as String? ?? 'Unknown',
+      imageUrl: json['urlToImage'] as String? ?? '',
+      publishedAt: json['publishedAt'] != null
+          ? DateTime.tryParse(json['publishedAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      category: category,
+    );
+  }
+
   @override
   Future<List<NewsArticleModel>> getLatestNews({
     required int page,
@@ -34,25 +60,24 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
     String? category,
   }) async {
     try {
-      final response = await AppConfig.dio.get(
-        '/news/latest',
+      final response = await _dio.get(
+        '$_baseUrl/top-headlines',
         queryParameters: {
+          'sources': _nigerianSources,
           'page': page,
           'pageSize': pageSize,
-          if (category != null) 'category': category,
+          'apiKey': _apiKey,
         },
         options: Options(
-          sendTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
         ),
       );
 
-      final articles = (response.data['data'] as List?)
-              ?.map((e) => NewsArticleModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-
-      return articles;
+      final articles = (response.data['articles'] as List?) ?? [];
+      return articles
+          .map((e) => _mapArticle(e as Map<String, dynamic>, category: category ?? ''))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -64,8 +89,28 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
     required int page,
     required int pageSize,
   }) async {
-    // TODO: Real NewsAPI (Guardian Nigeria, Punch, Premium Times) integration pending.
-    return [];
+    try {
+      final response = await _dio.get(
+        '$_baseUrl/everything',
+        queryParameters: {
+          'q': query,
+          'domains': 'guardian.ng,premiumtimesng.com,punchng.com,vanguardngr.com',
+          'page': page,
+          'pageSize': pageSize,
+          'sortBy': 'publishedAt',
+          'apiKey': _apiKey,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+
+      final articles = (response.data['articles'] as List?) ?? [];
+      return articles.map((e) => _mapArticle(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -74,15 +119,56 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
     required int page,
     required int pageSize,
   }) async {
-    // TODO: Real NewsAPI integration pending.
-    return [];
+    // NewsAPI's category filter isn't compatible with specific `sources`,
+    // so we search Nigerian domains scoped by category keyword instead.
+    try {
+      final response = await _dio.get(
+        '$_baseUrl/everything',
+        queryParameters: {
+          'q': category,
+          'domains': 'guardian.ng,premiumtimesng.com,punchng.com,vanguardngr.com',
+          'page': page,
+          'pageSize': pageSize,
+          'sortBy': 'publishedAt',
+          'apiKey': _apiKey,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+
+      final articles = (response.data['articles'] as List?) ?? [];
+      return articles
+          .map((e) => _mapArticle(e as Map<String, dynamic>, category: category))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
   Future<List<NewsArticleModel>> getTrendingNews({
     required int limit,
   }) async {
-    // TODO: Real NewsAPI integration pending.
-    return [];
+    try {
+      final response = await _dio.get(
+        '$_baseUrl/top-headlines',
+        queryParameters: {
+          'sources': _nigerianSources,
+          'pageSize': limit,
+          'apiKey': _apiKey,
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+
+      final articles = (response.data['articles'] as List?) ?? [];
+      return articles.map((e) => _mapArticle(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 }
