@@ -5,14 +5,12 @@ import 'package:nai/src/features/nigeria/domain/repositories/news_repository.dar
 import 'package:nai/src/features/nigeria/domain/repositories/wiki_repository.dart';
 
 import '../domain/ai_engine.dart';
+import 'response_cache.dart';
 
-/// Grounded AI engine: pulls real facts from News + Wikipedia, then hands
-/// them to Groq to write a natural, conversational, in-depth answer. Falls
-/// back to a plain Groq call (no grounding) for general/non-factual
-/// questions like small talk, coding help, or advice.
 class GroundedAIEngine implements AIEngine {
   final NewsRepository _newsRepository;
   final WikiRepository _wikiRepository;
+  final ResponseCache _cache;
   final Dio _dio = Dio();
 
   static const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
@@ -21,8 +19,10 @@ class GroundedAIEngine implements AIEngine {
   GroundedAIEngine({
     required NewsRepository newsRepository,
     required WikiRepository wikiRepository,
+    ResponseCache? cache,
   })  : _newsRepository = newsRepository,
-        _wikiRepository = wikiRepository;
+        _wikiRepository = wikiRepository,
+        _cache = cache ?? ResponseCache();
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
@@ -48,8 +48,21 @@ When given "Reference material," use it as your source of truth and write a natu
       return "Ask me anything — I'm here to help, especially with anything Nigeria-related.";
     }
 
+    final cached = await _cache.get(userQuery);
+    if (cached != null) {
+      return cached;
+    }
+
     final reference = await _gatherReference(userQuery);
-    return _askGroq(userQuery, reference);
+    final response = await _askGroq(userQuery, reference);
+
+    // Don't cache error messages — only cache real successful answers.
+    if (!response.startsWith("Something went wrong") &&
+        !response.startsWith("I'm getting a lot of requests")) {
+      await _cache.set(userQuery, response);
+    }
+
+    return response;
   }
 
   Future<String?> _gatherReference(String query) async {
