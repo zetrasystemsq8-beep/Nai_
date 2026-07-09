@@ -5,10 +5,8 @@
   "onboarding": {
     "onboarding_title_1": "Welcome to NAI",
     "onboarding_subtitle_1": "Nigeria's AI Assistant.\nAsk questions, learn, discover and get instant AI help.",
-
     "onboarding_title_2": "News That Matters",
     "onboarding_subtitle_2": "Stay updated with the latest Nigerian news,\ngovernment updates and important events.",
-
     "onboarding_title_3": "One AI for Nigeria",
     "onboarding_subtitle_3": "Chat, search, learn and explore everything about Nigeria\nfrom one intelligent assistant."
   },
@@ -56,6 +54,7 @@
 
     "forgot_password_title": "Reset Password",
     "forgot_password_subtitle": "Enter your email address and we'll send you a password reset link.",
-    "reset_link_sent": "Password reset email sent."
+    "reset_link_sent": "Password reset email sent.",
+    "back_to_login": "Back to Sign In"
   }
 }
