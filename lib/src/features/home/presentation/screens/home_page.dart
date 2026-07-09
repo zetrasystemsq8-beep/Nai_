@@ -2,6 +2,7 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.dart';
 
 // Screens
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
@@ -130,10 +131,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   }
 
   Future<String> _processMessage(String message) async {
-    // This method will be connected to the AI service layer.
-    // See: lib/features/chat/domain/usecases/send_message.dart
-    // See: lib/features/chat/data/repositories/chat_repository_impl.dart
-    return 'Message received. AI response will be available after connecting the service layer.';
+    final aiEngine = ref.read(aiEngineProvider);
+    return aiEngine.respond(message);
   }
 
   @override
