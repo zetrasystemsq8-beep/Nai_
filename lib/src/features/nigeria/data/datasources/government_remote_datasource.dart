@@ -7,6 +7,26 @@ abstract class GovernmentRemoteDataSource {
     required int page,
     required int pageSize,
   });
+
+  Future<List<GovernmentServiceModel>> searchServices({
+    required String query,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<GovernmentServiceModel>> getServicesByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<GovernmentServiceModel>> getPopularServices({
+    required int limit,
+  });
+
+  Future<GovernmentServiceModel> getServiceDetails(String serviceId);
+
+  Future<List<String>> getCategories();
 }
 
 class GovernmentRemoteDataSourceImpl implements GovernmentRemoteDataSource {
@@ -32,11 +52,49 @@ class GovernmentRemoteDataSourceImpl implements GovernmentRemoteDataSource {
               ?.map((e) => GovernmentServiceModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
-          
+
       return services;
-      
     } catch (e) {
-      rethrow;
+      return [];
     }
+  }
+
+  @override
+  Future<List<GovernmentServiceModel>> searchServices({
+    required String query,
+    required int page,
+    required int pageSize,
+  }) async {
+    // TODO: No real government-services search backend yet. Returns empty until wired.
+    return [];
+  }
+
+  @override
+  Future<List<GovernmentServiceModel>> getServicesByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  }) async {
+    // TODO: No real government-services backend yet. Returns empty until wired.
+    return [];
+  }
+
+  @override
+  Future<List<GovernmentServiceModel>> getPopularServices({
+    required int limit,
+  }) async {
+    // TODO: No real government-services backend yet. Returns empty until wired.
+    return [];
+  }
+
+  @override
+  Future<GovernmentServiceModel> getServiceDetails(String serviceId) async {
+    throw UnimplementedError('Government service details endpoint not yet wired.');
+  }
+
+  @override
+  Future<List<String>> getCategories() async {
+    // TODO: No real government-services backend yet. Returns empty until wired.
+    return [];
   }
 }
