@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_ce/hive.dart';
 
-import 'package:nai/src/features/nigeria/domain/news_repository.dart';
+import 'package:nai/src/features/nigeria/domain/repositories/news_repository.dart';
 import '../domain/daily_briefing.dart';
 
 /// Generates one AI-written briefing per day from today's top Nigerian
