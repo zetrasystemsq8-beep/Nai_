@@ -1,4 +1,5 @@
 import 'package:hive_ce/hive.dart';
+import 'package:uuid/uuid.dart';
 import '../domain/chat_message.dart';
 
 /// Persists chat sessions locally on-device using Hive.
@@ -29,5 +30,10 @@ class ChatHistoryStore {
   Future<void> deleteSession(String sessionId) async {
     final box = await _getBox();
     await box.delete(sessionId);
+  }
+
+  Future<void> clearAll() async {
+    final box = await _getBox();
+    await box.clear();
   }
 }
