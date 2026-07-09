@@ -3,6 +3,7 @@ import 'package:nai/src/imports/packages_imports.dart';
 
 import '../../data/chat_history_store.dart';
 import '../../domain/chat_message.dart';
+import 'chat_session_detail_screen.dart';
 
 class ChatHistoryScreen extends StatefulWidget {
   const ChatHistoryScreen({super.key});
@@ -57,48 +58,58 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _sessions.isEmpty
               ? _buildEmptyState(context)
-              : ListView.builder(
-                  padding: EdgeInsets.all(AppSpacing.md.w),
-                  itemCount: _sessions.length,
-                  itemBuilder: (context, index) {
-                    final session = _sessions[index];
-                    final lastMessage = session.messages.isNotEmpty
-                        ? session.messages.last.content
-                        : '';
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView.builder(
+                    padding: EdgeInsets.all(AppSpacing.md.w),
+                    itemCount: _sessions.length,
+                    itemBuilder: (context, index) {
+                      final session = _sessions[index];
+                      final lastMessage = session.messages.isNotEmpty
+                          ? session.messages.last.content
+                          : '';
 
-                    return Dismissible(
-                      key: ValueKey(session.id),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (_) => _delete(session.id),
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                        decoration: BoxDecoration(
-                          color: colorScheme.error,
-                          borderRadius: AppBorders.md,
-                        ),
-                        child: Icon(Icons.delete, color: colorScheme.onError),
-                      ),
-                      child: Card(
-                        margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
-                        child: ListTile(
-                          title: Text(
-                            session.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      return Dismissible(
+                        key: ValueKey(session.id),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (_) => _delete(session.id),
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error,
+                            borderRadius: AppBorders.md,
                           ),
-                          subtitle: Text(
-                            lastMessage,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                          trailing: Icon(IconsaxPlusLinear.arrow_right_3, size: 18.sp),
+                          child: Icon(Icons.delete, color: colorScheme.onError),
                         ),
-                      ),
-                    );
-                  },
+                        child: Card(
+                          margin: EdgeInsets.only(bottom: AppSpacing.sm.h),
+                          child: ListTile(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ChatSessionDetailScreen(session: session),
+                                ),
+                              );
+                            },
+                            title: Text(
+                              session.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                            ),
+                            trailing: Icon(IconsaxPlusLinear.arrow_right_3, size: 18.sp),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
     );
   }
