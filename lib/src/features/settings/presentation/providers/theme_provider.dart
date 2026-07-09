@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Controls light/dark/system theme selection app-wide.
-final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
-  return ThemeModeNotifier();
-});
-
-class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system);
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() => ThemeMode.system;
 
   void toggleDarkMode(bool isDark) {
     state = isDark ? ThemeMode.dark : ThemeMode.light;
@@ -17,3 +14,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     state = ThemeMode.system;
   }
 }
+
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
+  ThemeModeNotifier.new,
+);
