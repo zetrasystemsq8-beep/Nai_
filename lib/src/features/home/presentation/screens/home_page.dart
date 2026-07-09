@@ -56,7 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             label: 'History',
           ),
           NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.newspaper),
+            icon: Icon(IconsaxPlusLinear.document),
             label: 'News',
           ),
           NavigationDestination(
@@ -225,7 +225,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                     decoration: InputDecoration(
                       hintText: 'Ask me about Nigeria...',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppBorders.radiusLg),
+                        borderRadius: AppBorders.lg,
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
@@ -324,6 +324,8 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bubbleRadius = AppBorders.md.topLeft;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: AppSpacing.sm.h,
@@ -341,13 +343,9 @@ class _ChatBubble extends StatelessWidget {
             color: isUser
                 ? colorScheme.primary
                 : colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppBorders.radiusMd).copyWith(
-              bottomLeft: isUser
-                  ? const Radius.circular(AppBorders.radiusMd)
-                  : Radius.zero,
-              bottomRight: isUser
-                  ? Radius.zero
-                  : const Radius.circular(AppBorders.radiusMd),
+            borderRadius: AppBorders.md.copyWith(
+              bottomLeft: isUser ? bubbleRadius : Radius.zero,
+              bottomRight: isUser ? Radius.zero : bubbleRadius,
             ),
           ),
           child: isProcessing
