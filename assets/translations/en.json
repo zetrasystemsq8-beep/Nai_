@@ -3,17 +3,19 @@
     "get_started": "Continue"
   },
   "onboarding": {
-    "onboarding_title_1": "Nigeria's AI Assistant",
-    "onboarding_subtitle_1": "Ask questions, discover Nigeria, learn, work,\nand get AI assistance instantly.",
-    "onboarding_title_2": "Discover\nFriends Nearby",
-    "onboarding_subtitle_2": "See where your friends are traveling and\nexplore the world together.",
-    "onboarding_title_3": "Stay Updated\nwith Top Places",
-    "onboarding_subtitle_3": "Find trending destinations and must-see attractions,\nall tailored to enhance your travel plans."
+    "onboarding_title_1": "Welcome to NAI",
+    "onboarding_subtitle_1": "Nigeria's AI Assistant.\nAsk questions, learn, discover and get instant AI help.",
+
+    "onboarding_title_2": "News That Matters",
+    "onboarding_subtitle_2": "Stay updated with the latest Nigerian news,\ngovernment updates and important events.",
+
+    "onboarding_title_3": "One AI for Nigeria",
+    "onboarding_subtitle_3": "Chat, search, learn and explore everything about Nigeria\nfrom one intelligent assistant."
   },
   "home": {
     "home_title": "Home",
-    "welcome_home": "Welcome Home!",
-    "home_subtitle": "You have successfully completed the onboarding process."
+    "welcome_home": "Welcome to NAI!",
+    "home_subtitle": "Nigeria's AI Assistant is ready to help you."
   },
   "auth": {
     "log_in": "Welcome Back",
