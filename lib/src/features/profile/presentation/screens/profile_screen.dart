@@ -1,14 +1,82 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
-class ProfileScreen extends ConsumerWidget {
+import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nai/src/features/chat/data/chat_history_store.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  int _chatCount = 0;
+  int _messageCount = 0;
+  int _queryCount = 0;
+  bool _loadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final sessions = await ChatHistoryStore().getAllSessions();
+    var messageCount = 0;
+    var queryCount = 0;
+    for (final s in sessions) {
+      messageCount += s.messages.length;
+      queryCount += s.messages.where((m) => m.role == 'user').length;
+    }
+    if (mounted) {
+      setState(() {
+        _chatCount = sessions.length;
+        _messageCount = messageCount;
+        _queryCount = queryCount;
+        _loadingStats = false;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log Out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(authRepositoryProvider).logout();
+      // The router's redirect logic (listening to Firebase auth state)
+      // will automatically send the user to the login screen.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = context.theme.colorScheme;
     final textTheme = context.theme.textTheme;
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName?.isNotEmpty == true ? user!.displayName! : 'NAI User';
+    final email = user?.email ?? '';
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
     return Scaffold(
       appBar: const AppTopBar(title: 'Profile'),
@@ -30,7 +98,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    'U',
+                    initial,
                     style: textTheme.headlineLarge?.copyWith(
                       color: colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.bold,
@@ -40,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               SizedBox(height: AppSpacing.lg.h),
               Text(
-                'User Profile',
+                displayName,
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -48,21 +116,23 @@ class ProfileScreen extends ConsumerWidget {
               ),
               SizedBox(height: AppSpacing.sm.h),
               Text(
-                'user@nai.ai',
+                email,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.xxl.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StatCard(label: 'Chats', value: '12'),
-                  _StatCard(label: 'Messages', value: '245'),
-                  _StatCard(label: 'Queries', value: '89'),
-                ],
-              ),
+              _loadingStats
+                  ? const CircularProgressIndicator()
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _StatCard(label: 'Chats', value: '$_chatCount'),
+                        _StatCard(label: 'Messages', value: '$_messageCount'),
+                        _StatCard(label: 'Queries', value: '$_queryCount'),
+                      ],
+                    ),
               SizedBox(height: AppSpacing.xxl.h),
               AppButton(
                 label: 'Edit Profile',
@@ -78,7 +148,7 @@ class ProfileScreen extends ConsumerWidget {
               SizedBox(height: AppSpacing.md.h),
               AppButton(
                 label: 'Logout',
-                onPressed: () => context.go(AppRoutes.home),
+                onPressed: _logout,
                 isFullWidth: true,
                 variant: ButtonVariant.danger,
               ),
