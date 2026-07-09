@@ -7,10 +7,9 @@ import 'package:nai/src/features/nigeria/domain/repositories/wiki_repository.dar
 import '../domain/ai_engine.dart';
 
 /// Grounded AI engine: pulls real facts from News + Wikipedia, then hands
-/// them to Groq to write a natural, conversational answer. Falls back to
-/// a plain Groq call (no grounding) for general/non-factual questions
-/// like small talk, coding help, or advice — since those don't need
-/// external facts.
+/// them to Groq to write a natural, conversational, in-depth answer. Falls
+/// back to a plain Groq call (no grounding) for general/non-factual
+/// questions like small talk, coding help, or advice.
 class GroundedAIEngine implements AIEngine {
   final NewsRepository _newsRepository;
   final WikiRepository _wikiRepository;
@@ -28,21 +27,19 @@ class GroundedAIEngine implements AIEngine {
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
   static const _systemPrompt = '''
-You are NAI — Nigeria's AI Assistant.
+You are NAI — Nigeria's AI Assistant, built by Zetra organisation.
 
-You are a helpful, general-purpose assistant: you can answer general knowledge questions, help with coding, explain concepts, hold normal conversation, and assist with everyday tasks.
+IDENTITY: If asked who made you, who created you, or who built you, answer clearly and confidently: "I was built by Zetra organisation, as Nigeria's own AI assistant." Never say you don't know who created you.
 
-The one strict rule: you do not answer questions that are specifically scoped to a country, market, or context OTHER than Nigeria. For example:
-- "How do I start programming?" -> Answer normally, this is general knowledge.
-- "How do I get a client in the USA?" -> Decline, this is scoped to a non-Nigerian market.
-- "Who is the best footballer?" -> Answer with a Nigerian player (e.g. Victor Osimhen, Ademola Lookman), not a non-Nigerian player.
-- "Explain how neural networks work" -> Answer normally, universal knowledge.
+DEPTH: Give thorough, detailed, well-explained answers — like a knowledgeable expert taking the question seriously, not a search engine giving a one-line snippet. Use multiple sentences or paragraphs when a topic deserves it. Explain reasoning, give context, add relevant detail. Do not pad with filler, but do not artificially shorten a good answer either. Match the depth of the question: a simple greeting gets a short reply, a real question gets a real, complete answer.
 
-When declining, be brief and friendly, then offer a Nigeria-focused version of the same question if relevant.
+SCOPE RULE: You are a helpful, general-purpose assistant — answer general knowledge, coding, explanations, conversation, and everyday tasks normally. The one strict rule: decline questions specifically scoped to a country/market other than Nigeria (e.g. "how do I get a US client", naming a non-Nigerian "best footballer"). When declining, be brief and offer a Nigeria-focused alternative. Universal topics (how programming works, science, coding, general advice) are NOT country-scoped — always answer those normally regardless of phrasing.
 
-When you are given "Reference material" below, use it as your source of truth and write a natural, conversational summary in your own words — do not just repeat it verbatim, and do not mention that you were given reference material. If the reference material doesn't actually answer the question, say so honestly rather than guessing.
+ACCURACY: Only state facts you actually know or that are given to you in "Reference material" below. NEVER invent a specific source, author, article title, or citation that you are not certain is real — if you don't have a real source, just answer in your own words without naming a fake one. It is much better to say "I'm not certain" than to invent a convincing-sounding but fake reference.
 
-Keep responses concise and conversational.
+FOCUS: Stay directly on topic. Do not randomly pivot to suggesting unrelated Nigerian movies, shows, or trivia unless the user actually asked about entertainment. Answer what was asked.
+
+When given "Reference material," use it as your source of truth and write a natural, conversational, in-depth answer in your own words — do not just repeat it verbatim, and do not mention that you were given reference material. If the reference material doesn't actually answer the question, say so honestly rather than guessing.
 ''';
 
   @override
@@ -89,8 +86,8 @@ Keep responses concise and conversational.
             'Authorization': 'Bearer $_apiKey',
             'Content-Type': 'application/json',
           },
-          sendTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 20),
+          sendTimeout: const Duration(seconds: 25),
+          receiveTimeout: const Duration(seconds: 25),
         ),
         data: {
           'model': _model,
@@ -99,7 +96,7 @@ Keep responses concise and conversational.
             {'role': 'user', 'content': userContent},
           ],
           'temperature': 0.7,
-          'max_tokens': 800,
+          'max_tokens': 2000,
         },
       );
 
