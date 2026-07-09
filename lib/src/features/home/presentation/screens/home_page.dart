@@ -1,8 +1,12 @@
+import 'package:uuid/uuid.dart';
+
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.dart';
+import 'package:nai/src/features/chat/data/chat_history_store.dart';
+import 'package:nai/src/features/chat/domain/chat_message.dart';
 
 // Screens
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
@@ -39,7 +43,13 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: _screens[_selectedIndex],
+      // IndexedStack keeps every tab's state alive under the hood, instead
+      // of disposing/rebuilding on switch — this is what stops an
+      // in-progress chat from being wiped when you visit another tab.
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -81,8 +91,17 @@ class _ChatTabContent extends ConsumerStatefulWidget {
 class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, String>> _messages = [];
+  final List<ChatMessage> _messages = [];
+  final _historyStore = ChatHistoryStore();
   bool _isProcessing = false;
+
+  late final String _sessionId;
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionId = const Uuid().v4();
+  }
 
   @override
   void dispose() {
@@ -104,30 +123,73 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   }
 
   Future<void> _sendMessage(String message) async {
-    if (message.trim().isEmpty || _isProcessing) return;
+    final trimmed = message.trim();
+    if (trimmed.isEmpty || _isProcessing) return;
+
+    final userMessage = ChatMessage(
+      id: const Uuid().v4(),
+      role: 'user',
+      content: trimmed,
+      timestamp: DateTime.now(),
+    );
 
     setState(() {
-      _messages.add({'role': 'user', 'content': message.trim()});
+      _messages.add(userMessage);
       _isProcessing = true;
     });
     _messageController.clear();
     _scrollToBottom();
 
     setState(() {
-      _messages.add({'role': 'assistant', 'content': '...'});
+      _messages.add(ChatMessage(
+        id: 'typing',
+        role: 'assistant',
+        content: '...',
+        timestamp: DateTime.now(),
+      ));
     });
     _scrollToBottom();
 
-    final response = await _processMessage(message);
+    final response = await _processMessage(trimmed);
+
+    final assistantMessage = ChatMessage(
+      id: const Uuid().v4(),
+      role: 'assistant',
+      content: response,
+      timestamp: DateTime.now(),
+    );
 
     setState(() {
-      if (_messages.isNotEmpty && _messages.last['role'] == 'assistant') {
+      if (_messages.isNotEmpty && _messages.last.id == 'typing') {
         _messages.removeLast();
       }
-      _messages.add({'role': 'assistant', 'content': response});
+      _messages.add(assistantMessage);
       _isProcessing = false;
     });
     _scrollToBottom();
+
+    await _saveSession();
+  }
+
+  Future<void> _saveSession() async {
+    if (_messages.isEmpty) return;
+
+    final firstUserMessage = _messages.firstWhere(
+      (m) => m.role == 'user',
+      orElse: () => _messages.first,
+    );
+    final title = firstUserMessage.content.length > 40
+        ? '${firstUserMessage.content.substring(0, 40)}...'
+        : firstUserMessage.content;
+
+    await _historyStore.saveSession(
+      ChatSession(
+        id: _sessionId,
+        title: title,
+        createdAt: _messages.first.timestamp,
+        messages: List.of(_messages),
+      ),
+    );
   }
 
   Future<String> _processMessage(String message) async {
@@ -148,30 +210,25 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
         elevation: 0,
         title: Row(
           children: [
-            Image.asset(
-              'assets/icons/nai_logo.png',
-              width: 28,
-              height: 28,
+            CircleAvatar(
+              radius: 16.r,
+              backgroundColor: colorScheme.primary,
+              child: Text(
+                'N',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12.sp,
+                ),
+              ),
             ),
             SizedBox(width: AppSpacing.sm.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'NAI',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                Text(
-                  "Nigeria's AI Assistant",
-                  style: textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 10.sp,
-                  ),
-                ),
-              ],
+            Text(
+              'NAI Assistant',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -188,15 +245,14 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
-                      final isUser = message['role'] == 'user';
-                      final content = message['content'] ?? '';
+                      final isUser = message.role == 'user';
                       final isProcessing = _isProcessing &&
                           index == _messages.length - 1 &&
                           !isUser;
 
                       return _ChatBubble(
                         isUser: isUser,
-                        content: content,
+                        content: message.content,
                         isProcessing: isProcessing,
                         colorScheme: colorScheme,
                         textTheme: textTheme,
@@ -227,7 +283,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                     controller: _messageController,
                     enabled: !_isProcessing,
                     decoration: InputDecoration(
-                      hintText: 'Message NAI...',
+                      hintText: 'Ask me about Nigeria...',
                       border: OutlineInputBorder(
                         borderRadius: AppBorders.lg,
                         borderSide: BorderSide.none,
@@ -281,15 +337,15 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                 color: colorScheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Image.asset(
-                'assets/icons/nai_logo.png',
-                width: 64,
-                height: 64,
+              child: Icon(
+                IconsaxPlusLinear.message,
+                size: 64.sp,
+                color: colorScheme.primary,
               ),
             ),
             SizedBox(height: AppSpacing.lg.h),
             Text(
-              'Welcome to NAI',
+              'NAI - Nigeria\'s AI Assistant',
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -297,7 +353,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
             ),
             SizedBox(height: AppSpacing.sm.h),
             Text(
-              "Nigeria's AI Assistant\n\nAsk anything.\nSearch the web.\nUnderstand Nigeria.\nWrite, code and learn with AI.",
+              'Ask me anything about Nigeria.\nI\'m here to help! 🇳🇬',
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
@@ -386,10 +442,13 @@ class _AiAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: 14.r,
       backgroundColor: colorScheme.primary,
-      child: Image.asset(
-        'assets/icons/nai_logo.png',
-        width: 24,
-        height: 24,
+      child: Text(
+        'N',
+        style: TextStyle(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.bold,
+          fontSize: 12.sp,
+        ),
       ),
     );
   }
