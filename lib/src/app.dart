@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/features/settings/presentation/providers/theme_provider.dart';
+import 'package:nai/src/features/settings/presentation/providers/text_scale_provider.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -14,6 +15,7 @@ class App extends ConsumerWidget {
 
   Widget _buildMaterialApp(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final textScale = ref.watch(textScaleProvider);
 
     return MaterialApp.router(
       title: 'nai',
@@ -27,6 +29,12 @@ class App extends ConsumerWidget {
       locale: context.locale,
       builder: (context, child) {
         Widget current = child!;
+        current = MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale.scaleFactor),
+          ),
+          child: current,
+        );
         current = SkeletonWrapper(child: current);
         current = SessionListenerWrapper(child: current);
         return current;
