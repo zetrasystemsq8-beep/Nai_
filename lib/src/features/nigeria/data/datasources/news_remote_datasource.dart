@@ -6,6 +6,23 @@ abstract class NewsRemoteDataSource {
   Future<List<NewsArticleModel>> getLatestNews({
     required int page,
     required int pageSize,
+    String? category,
+  });
+
+  Future<List<NewsArticleModel>> searchNews({
+    required String query,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<NewsArticleModel>> getNewsByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<List<NewsArticleModel>> getTrendingNews({
+    required int limit,
   });
 }
 
@@ -14,6 +31,7 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
   Future<List<NewsArticleModel>> getLatestNews({
     required int page,
     required int pageSize,
+    String? category,
   }) async {
     try {
       final response = await AppConfig.dio.get(
@@ -21,6 +39,7 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
+          if (category != null) 'category': category,
         },
         options: Options(
           sendTimeout: const Duration(seconds: 5),
@@ -32,11 +51,38 @@ class NewsRemoteDataSourceImpl implements NewsRemoteDataSource {
               ?.map((e) => NewsArticleModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
-          
+
       return articles;
-      
     } catch (e) {
-      rethrow;
+      return [];
     }
+  }
+
+  @override
+  Future<List<NewsArticleModel>> searchNews({
+    required String query,
+    required int page,
+    required int pageSize,
+  }) async {
+    // TODO: Real NewsAPI (Guardian Nigeria, Punch, Premium Times) integration pending.
+    return [];
+  }
+
+  @override
+  Future<List<NewsArticleModel>> getNewsByCategory({
+    required String category,
+    required int page,
+    required int pageSize,
+  }) async {
+    // TODO: Real NewsAPI integration pending.
+    return [];
+  }
+
+  @override
+  Future<List<NewsArticleModel>> getTrendingNews({
+    required int limit,
+  }) async {
+    // TODO: Real NewsAPI integration pending.
+    return [];
   }
 }
