@@ -3,6 +3,7 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 import '../providers/wiki_provider.dart';
 import '../widgets/wiki_result_card.dart';
+import 'wiki_detail_screen.dart';
 
 class WikiSearchScreen extends ConsumerStatefulWidget {
   const WikiSearchScreen({super.key});
@@ -76,9 +77,10 @@ class _WikiSearchScreenState extends ConsumerState<WikiSearchScreen> {
                           itemBuilder: (context, index) => WikiResultCard(
                             entry: entries[index],
                             onTap: () {
-                              showGlobalToast(
-                                message: 'Wiki entry selected',
-                                status: 'success',
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => WikiDetailScreen(entry: entries[index]),
+                                ),
                               );
                             },
                           ),
