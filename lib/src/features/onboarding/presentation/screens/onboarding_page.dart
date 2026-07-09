@@ -17,24 +17,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+
     _onboardingData = [
       {
         'title': 'onboarding.onboarding_title_1'.tr(),
-        'subtitle':
-            'onboarding.onboarding_subtitle_1'.tr(),
-        'pageWidget': const FlutterLogo(size: 200),
+        'subtitle': 'onboarding.onboarding_subtitle_1'.tr(),
+        'pageWidget': Image.asset(
+          'assets/icons/nai_logo.png',
+          width: 200,
+          height: 200,
+        ),
       },
       {
         'title': 'onboarding.onboarding_title_2'.tr(),
-        'subtitle':
-            'onboarding.onboarding_subtitle_2'.tr(),
-        'pageWidget': const FlutterLogo(size: 200),
+        'subtitle': 'onboarding.onboarding_subtitle_2'.tr(),
+        'pageWidget': Image.asset(
+          'assets/icons/nai_logo.png',
+          width: 200,
+          height: 200,
+        ),
       },
       {
         'title': 'onboarding.onboarding_title_3'.tr(),
-        'subtitle':
-            'onboarding.onboarding_subtitle_3'.tr(),
-        'pageWidget': const FlutterLogo(size: 200),
+        'subtitle': 'onboarding.onboarding_subtitle_3'.tr(),
+        'pageWidget': Image.asset(
+          'assets/icons/nai_logo.png',
+          width: 200,
+          height: 200,
+        ),
       },
     ];
   }
@@ -46,7 +56,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onGetStarted() {
-    // Navigate back or to home. For template purpose:
     context.go(AppRoutes.login);
   }
 
@@ -97,7 +106,6 @@ class _OnboardingView extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top branding
             Padding(
               padding: EdgeInsets.only(
                 top: AppSpacing.lg.h,
@@ -107,13 +115,12 @@ class _OnboardingView extends StatelessWidget {
                 'NAI',
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: colorScheme.onSurface,
-                  fontSize: 22.sp,
+                  color: colorScheme.primary,
+                  fontSize: 26.sp,
                 ),
               ),
             ),
 
-            // PageView
             Expanded(
               child: PageView.builder(
                 controller: pageController,
@@ -122,7 +129,6 @@ class _OnboardingView extends StatelessWidget {
                 itemBuilder: (context, index) {
                   return Column(
                     children: [
-                      // Dynamic Illustration Section
                       Expanded(
                         child: Center(
                           child: Padding(
@@ -134,7 +140,6 @@ class _OnboardingView extends StatelessWidget {
                         ),
                       ),
 
-                      // Text Section
                       Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: AppSpacing.xl.w,
@@ -145,9 +150,8 @@ class _OnboardingView extends StatelessWidget {
                               onboardingData[index]['title'] as String,
                               textAlign: TextAlign.center,
                               style: textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.bold,
                                 color: colorScheme.onSurface,
-                                height: 1.2,
                                 fontSize: 24.sp,
                               ),
                             ),
@@ -158,12 +162,13 @@ class _OnboardingView extends StatelessWidget {
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                                 height: 1.5,
-                                fontSize: 14.sp,
+                                fontSize: 15.sp,
                               ),
                             ),
                           ],
                         ),
                       ),
+
                       SizedBox(height: 40.h),
                     ],
                   );
@@ -171,21 +176,13 @@ class _OnboardingView extends StatelessWidget {
               ),
             ),
 
-            // Bottom Section: Dots and Button
             Padding(
               padding: EdgeInsets.all(AppSpacing.xl.w),
-              child: Column(
-                children: [
-                   SizedBox(height: AppSpacing.xl),
-                  // Get Started Button
-                  AppButton(
-                    label: 'shared.get_started'.tr(),
-                    onPressed: onGetStarted,
-                    variant: ButtonVariant.primary,
-                    width: ButtonSize.medium,
-                  ),
-                  SizedBox(height: AppSpacing.md),
-                ],
+              child: AppButton(
+                label: 'shared.get_started'.tr(),
+                onPressed: onGetStarted,
+                variant: ButtonVariant.primary,
+                width: ButtonSize.medium,
               ),
             ),
           ],
