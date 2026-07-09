@@ -7,6 +7,7 @@ import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart'
 import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.dart';
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 import 'package:nai/src/features/chat/domain/chat_message.dart';
+import 'package:nai/src/features/chat/presentation/widgets/animated_reveal_text.dart';
 
 // Screens
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
@@ -43,9 +44,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      // IndexedStack keeps every tab's state alive under the hood, instead
-      // of disposing/rebuilding on switch — this is what stops an
-      // in-progress chat from being wiped when you visit another tab.
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
@@ -277,25 +275,32 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
               ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    enabled: !_isProcessing,
-                    decoration: InputDecoration(
-                      hintText: 'Ask me about Nigeria...',
-                      border: OutlineInputBorder(
-                        borderRadius: AppBorders.lg,
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md.w,
-                        vertical: AppSpacing.sm.h,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: 120.h),
+                    child: TextField(
+                      controller: _messageController,
+                      enabled: !_isProcessing,
+                      minLines: 1,
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: 'Ask me about Nigeria...',
+                        border: OutlineInputBorder(
+                          borderRadius: AppBorders.lg,
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md.w,
+                          vertical: AppSpacing.sm.h,
+                        ),
                       ),
                     ),
-                    onSubmitted: (value) => _sendMessage(value),
                   ),
                 ),
                 SizedBox(width: AppSpacing.sm.w),
@@ -417,12 +422,19 @@ class _ChatBubble extends StatelessWidget {
               ),
               child: isProcessing
                   ? const _TypingIndicator()
-                  : Text(
-                      content,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: isUser ? colorScheme.onPrimary : colorScheme.onSurface,
-                      ),
-                    ),
+                  : isUser
+                      ? Text(
+                          content,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : AnimatedRevealText(
+                          text: content,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
             ),
           ),
         ],
