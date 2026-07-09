@@ -148,25 +148,30 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
         elevation: 0,
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 16.r,
-              backgroundColor: colorScheme.primary,
-              child: Text(
-                'N',
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.sp,
-                ),
-              ),
+            Image.asset(
+              'assets/icons/nai_logo.png',
+              width: 28,
+              height: 28,
             ),
             SizedBox(width: AppSpacing.sm.w),
-            Text(
-              'NAI Assistant',
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'NAI',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  "Nigeria's AI Assistant",
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 10.sp,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -222,7 +227,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                     controller: _messageController,
                     enabled: !_isProcessing,
                     decoration: InputDecoration(
-                      hintText: 'Ask me about Nigeria...',
+                      hintText: 'Message NAI...',
                       border: OutlineInputBorder(
                         borderRadius: AppBorders.lg,
                         borderSide: BorderSide.none,
@@ -276,15 +281,15 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                 color: colorScheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                IconsaxPlusLinear.message,
-                size: 64.sp,
-                color: colorScheme.primary,
+              child: Image.asset(
+                'assets/icons/nai_logo.png',
+                width: 64,
+                height: 64,
               ),
             ),
             SizedBox(height: AppSpacing.lg.h),
             Text(
-              'NAI - Nigeria\'s AI Assistant',
+              'Welcome to NAI',
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -292,7 +297,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
             ),
             SizedBox(height: AppSpacing.sm.h),
             Text(
-              'Ask me anything about Nigeria.\nI\'m here to help! 🇳🇬',
+              "Nigeria's AI Assistant\n\nAsk anything.\nSearch the web.\nUnderstand Nigeria.\nWrite, code and learn with AI.",
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
@@ -381,13 +386,10 @@ class _AiAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: 14.r,
       backgroundColor: colorScheme.primary,
-      child: Text(
-        'N',
-        style: TextStyle(
-          color: colorScheme.onPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 12.sp,
-        ),
+      child: Image.asset(
+        'assets/icons/nai_logo.png',
+        width: 24,
+        height: 24,
       ),
     );
   }
