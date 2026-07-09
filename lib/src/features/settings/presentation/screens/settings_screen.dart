@@ -3,6 +3,7 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
 import 'package:nai/src/features/settings/presentation/providers/theme_provider.dart';
+import 'package:nai/src/features/settings/presentation/providers/text_scale_provider.dart';
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -37,11 +38,87 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _showFontSizeDialog(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(textScaleProvider);
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Font Size'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AppTextScale.values.map((scale) {
+            return RadioListTile<AppTextScale>(
+              title: Text(scale.label),
+              value: scale,
+              groupValue: current,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(textScaleProvider.notifier).setScale(value);
+                  Navigator.of(dialogContext).pop();
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _showDataPrivacyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Data & Privacy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'NAI stores the following data locally on your device:\n\n'
+            '• Your chat conversations, saved on-device so you can revisit them\n'
+            '• Cached AI responses, to answer repeated questions faster\n\n'
+            'Your account (name and email) is managed securely through Firebase Authentication.\n\n'
+            'When you ask NAI a question, it may search public Nigerian news and Wikipedia sources, and send your question to an AI language model to generate a response. No conversation data is sold or shared with advertisers.\n\n'
+            'You can permanently delete all locally saved conversations at any time using "Clear Chat History" above.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'By using NAI, you agree to the following:\n\n'
+            '1. NAI is an AI assistant and may occasionally provide inaccurate or incomplete information. Always verify important facts independently.\n\n'
+            '2. NAI is intended for lawful, respectful use. Do not use NAI to generate harmful, illegal, or abusive content.\n\n'
+            '3. Your use of NAI is at your own discretion. Zetra Systems is not liable for decisions made based on NAI\'s responses.\n\n'
+            '4. These terms may be updated as NAI evolves. Continued use of the app constitutes acceptance of any changes.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark ||
         (themeMode == ThemeMode.system && context.isDarkMode);
+    final fontSize = ref.watch(textScaleProvider);
 
     return Scaffold(
       appBar: const AppTopBar(title: 'Settings'),
@@ -64,13 +141,8 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 _SettingItem(
                   title: 'Font Size',
-                  subtitle: 'Adjust text size',
-                  onTap: () {
-                    showGlobalToast(
-                      message: 'Font size settings (coming soon)',
-                      status: 'info',
-                    );
-                  },
+                  subtitle: fontSize.label,
+                  onTap: () => _showFontSizeDialog(context, ref),
                 ),
               ],
             ),
@@ -86,32 +158,41 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingItem(
                   title: 'Data & Privacy',
                   subtitle: 'Manage your data',
-                  onTap: () {
-                    showGlobalToast(
-                      message: 'Privacy settings (coming soon)',
-                      status: 'info',
-                    );
-                  },
+                  onTap: () => _showDataPrivacyDialog(context),
                 ),
               ],
             ),
             SizedBox(height: AppSpacing.lg.h),
             _SettingSection(
-              title: 'About',
+              title: 'Help',
               children: [
                 _SettingItem(
+                  title: 'Help & Support',
+                  subtitle: 'Guides for NAI, Nigergram, and more',
+                  onTap: () => context.push(AppRoutes.governmentServices),
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.lg.h),
+            _SettingSection(
+              title: 'About NAI',
+              children: [
+                const _SettingItem(
+                  title: 'NAI',
+                  subtitle: "Nigeria's AI Assistant",
+                ),
+                const _SettingItem(
                   title: 'Version',
                   subtitle: '1.0.0',
+                ),
+                const _SettingItem(
+                  title: 'Developed by Zetra',
+                  subtitle: 'Powered by Zetra AI',
                 ),
                 _SettingItem(
                   title: 'Terms of Service',
                   subtitle: 'Read our terms',
-                  onTap: () {
-                    showGlobalToast(
-                      message: 'Terms of Service (coming soon)',
-                      status: 'info',
-                    );
-                  },
+                  onTap: () => _showTermsDialog(context),
                 ),
               ],
             ),
@@ -184,10 +265,13 @@ class _SettingItem extends StatelessWidget {
           color: colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: trailing ?? Icon(
-        IconsaxPlusLinear.arrow_right_3,
-        color: colorScheme.onSurfaceVariant,
-      ),
+      trailing: onTap != null
+          ? (trailing ??
+              Icon(
+                IconsaxPlusLinear.arrow_right_3,
+                color: colorScheme.onSurfaceVariant,
+              ))
+          : trailing,
       onTap: onTap,
     );
   }
