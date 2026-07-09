@@ -150,13 +150,13 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
           children: [
             CircleAvatar(
               radius: 16.r,
-              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+              backgroundColor: colorScheme.primary,
               child: Text(
-                'NAI',
+                'N',
                 style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
+                  color: colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 10.sp,
+                  fontSize: 12.sp,
                 ),
               ),
             ),
@@ -331,55 +331,125 @@ class _ChatBubble extends StatelessWidget {
         left: isUser ? AppSpacing.xl.w : 0,
         right: isUser ? 0 : AppSpacing.xl.w,
       ),
-      child: Align(
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.8,
-          ),
-          padding: EdgeInsets.all(AppSpacing.md.w),
-          decoration: BoxDecoration(
-            color: isUser
-                ? colorScheme.primary
-                : colorScheme.surfaceContainerHighest,
-            borderRadius: AppBorders.md.copyWith(
-              bottomLeft: isUser ? bubbleRadius : Radius.zero,
-              bottomRight: isUser ? Radius.zero : bubbleRadius,
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            _AiAvatar(colorScheme: colorScheme),
+            SizedBox(width: AppSpacing.xs.w),
+          ],
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.72,
+              ),
+              padding: EdgeInsets.all(AppSpacing.md.w),
+              decoration: BoxDecoration(
+                color: isUser
+                    ? colorScheme.primary
+                    : colorScheme.surfaceContainerHighest,
+                borderRadius: AppBorders.md.copyWith(
+                  bottomLeft: isUser ? bubbleRadius : Radius.zero,
+                  bottomRight: isUser ? Radius.zero : bubbleRadius,
+                ),
+              ),
+              child: isProcessing
+                  ? const _TypingIndicator()
+                  : Text(
+                      content,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: isUser ? colorScheme.onPrimary : colorScheme.onSurface,
+                      ),
+                    ),
             ),
           ),
-          child: isProcessing
-              ? SizedBox(
-                  width: 40.w,
-                  child: Row(
-                    children: [
-                      _buildDot(),
-                      SizedBox(width: 4.w),
-                      _buildDot(),
-                      SizedBox(width: 4.w),
-                      _buildDot(),
-                    ],
-                  ),
-                )
-              : Text(
-                  content,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: isUser
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurface,
-                  ),
-                ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===== AI AVATAR =====
+class _AiAvatar extends StatelessWidget {
+  const _AiAvatar({required this.colorScheme});
+
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 14.r,
+      backgroundColor: colorScheme.primary,
+      child: Text(
+        'N',
+        style: TextStyle(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.bold,
+          fontSize: 12.sp,
         ),
       ),
     );
   }
+}
 
-  Widget _buildDot() {
-    return Container(
-      width: 8.w,
-      height: 8.w,
-      decoration: BoxDecoration(
-        color: colorScheme.onSurfaceVariant,
-        shape: BoxShape.circle,
+// ===== ANIMATED TYPING INDICATOR =====
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.theme.colorScheme;
+
+    return SizedBox(
+      width: 40.w,
+      height: 16.h,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(3, (i) {
+              final delay = i * 0.2;
+              final t = ((_controller.value - delay) % 1.0).clamp(0.0, 1.0);
+              final scale = 0.5 + 0.5 * (t < 0.5 ? t * 2 : (1 - t) * 2);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 8.w,
+                  height: 8.w,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }
