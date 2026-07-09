@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nai/src/routing/global_navigator.dart';
 import 'package:nai/src/routing/app_routes.dart';
@@ -15,9 +18,50 @@ import 'package:nai/src/features/settings/presentation/screens/settings_screen.d
 import 'package:nai/src/features/profile/presentation/screens/profile_screen.dart';
 import 'package:nai/src/features/search/presentation/screens/search_screen.dart';
 
+/// Bridges a Stream (Firebase's authStateChanges) into a Listenable that
+/// GoRouter's `refreshListenable` can use to re-evaluate `redirect` whenever
+/// auth state changes (login, logout, app restart with existing session).
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: AppRoutes.onboarding,
+  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final currentPath = state.matchedLocation;
+
+    final isAuthRoute = currentPath == AppRoutes.login ||
+        currentPath == AppRoutes.signup ||
+        currentPath == AppRoutes.forgotPassword;
+    final isOnboarding = currentPath == AppRoutes.onboarding;
+
+    // Logged in, but sitting on an auth screen or onboarding -> go home.
+    if (isLoggedIn && (isAuthRoute || isOnboarding)) {
+      return AppRoutes.home;
+    }
+
+    // Not logged in, trying to reach a protected screen -> send to login.
+    // Onboarding itself stays reachable so first-time users still see it.
+    if (!isLoggedIn && !isAuthRoute && !isOnboarding) {
+      return AppRoutes.login;
+    }
+
+    return null; // no redirect needed
+  },
   routes: <RouteBase>[
     GoRoute(
       path: AppRoutes.onboarding,
