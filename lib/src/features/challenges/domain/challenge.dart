@@ -1,0 +1,78 @@
+enum ChallengeDifficulty { easy, medium, hard, expert }
+
+extension ChallengeDifficultyValue on ChallengeDifficulty {
+  int get coinReward {
+    switch (this) {
+      case ChallengeDifficulty.easy:
+        return 10;
+      case ChallengeDifficulty.medium:
+        return 15;
+      case ChallengeDifficulty.hard:
+        return 25;
+      case ChallengeDifficulty.expert:
+        return 50;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ChallengeDifficulty.easy:
+        return 'Easy';
+      case ChallengeDifficulty.medium:
+        return 'Medium';
+      case ChallengeDifficulty.hard:
+        return 'Hard';
+      case ChallengeDifficulty.expert:
+        return 'Expert';
+    }
+  }
+}
+
+const List<String> challengeCategories = [
+  'Nigeria Trivia',
+  'Mathematics',
+  'English',
+  'Programming',
+  'AI',
+  'History',
+  'Science',
+  'Word Guess',
+  'Logic Puzzle',
+  'Picture-less Riddle',
+];
+
+class Challenge {
+  final String id;
+  final String category;
+  final ChallengeDifficulty difficulty;
+  final String question;
+  final String correctAnswer;
+  final DateTime createdAt;
+
+  const Challenge({
+    required this.id,
+    required this.category,
+    required this.difficulty,
+    required this.question,
+    required this.correctAnswer,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'category': category,
+        'difficulty': difficulty.name,
+        'question': question,
+        'correctAnswer': correctAnswer,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory Challenge.fromJson(Map<dynamic, dynamic> json) => Challenge(
+        id: json['id'] as String,
+        category: json['category'] as String,
+        difficulty: ChallengeDifficulty.values.firstWhere((d) => d.name == json['difficulty']),
+        question: json['question'] as String,
+        correctAnswer: json['correctAnswer'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
+}
