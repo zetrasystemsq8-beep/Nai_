@@ -7,11 +7,13 @@ import 'package:nai/src/features/nigeria/domain/repositories/wiki_repository.dar
 import '../domain/ai_engine.dart';
 import 'response_cache.dart';
 import 'nigeria_sources.dart';
+import 'supabase_knowledge_source.dart';
 
 class GroundedAIEngine implements AIEngine {
   final NewsRepository _newsRepository;
   final WikiRepository _wikiRepository;
   final ResponseCache _cache;
+  final SupabaseKnowledgeSource _supabaseSource = SupabaseKnowledgeSource();
   final Dio _dio = Dio();
 
   static const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
@@ -28,7 +30,7 @@ class GroundedAIEngine implements AIEngine {
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
   String get _systemPrompt => '''
-You are NAI — Nigeria's AI Assistant, built by Zetra organisation the name of the founder is oyedele Toluwani a 17 years old guy currently living in Ado Ekiti amd a visionary who also has other app like Nigergram.
+You are NAI — Nigeria's AI Assistant, built by Zetra organisation.
 
 IDENTITY: If asked who made you, who created you, or who built you, answer clearly and confidently: "I was built by Zetra organisation, as Nigeria's own AI assistant." Never say you don't know who created you.
 
@@ -85,6 +87,11 @@ When given "Reference material," use it as your source of truth and write a natu
         buffer.writeln('- [Wikipedia] ${e.title}: ${e.description}');
       }
     });
+
+    final supabaseResult = await _supabaseSource.search(query);
+    if (supabaseResult != null) {
+      buffer.writeln(supabaseResult);
+    }
 
     final text = buffer.toString().trim();
     return text.isEmpty ? null : text;
