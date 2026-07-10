@@ -25,7 +25,7 @@ class CoinWalletStore {
     return box.get('balance', defaultValue: 0) as int;
   }
 
-  Future<void> _addCoins(int amount) async {
+  Future<void> addCoins(int amount) async {
     final box = await _getBox();
     final current = box.get('balance', defaultValue: 0) as int;
     await box.put('balance', current + amount);
@@ -48,12 +48,11 @@ class CoinWalletStore {
     await box.put('count_$_todayKey', current + 1);
   }
 
-  /// Returns the coin cost to start the NEXT challenge (0 if still within
-  /// the free daily allowance), per the escalating cost rule.
-  Future<int> getNextChallengeCost() async {
+  Future<int> getNextChallengeCost({int bonusFreeChallenges = 0}) async {
     final count = await getTodaysChallengeCount();
-    if (count < _maxFreeChallengesPerDay) return 0;
-    final paidAttemptNumber = count - _maxFreeChallengesPerDay + 1; // 1st paid = 4th overall
+    final effectiveFreeLimit = _maxFreeChallengesPerDay + bonusFreeChallenges;
+    if (count < effectiveFreeLimit) return 0;
+    final paidAttemptNumber = count - effectiveFreeLimit + 1;
     switch (paidAttemptNumber) {
       case 1:
         return 5;
@@ -66,29 +65,25 @@ class CoinWalletStore {
     }
   }
 
-  /// Call before generating a challenge. Returns false if the user can't
-  /// afford it (insufficient balance for a paid attempt).
-  Future<bool> canStartChallenge() async {
-    final cost = await getNextChallengeCost();
+  Future<bool> canStartChallenge({int bonusFreeChallenges = 0}) async {
+    final cost = await getNextChallengeCost(bonusFreeChallenges: bonusFreeChallenges);
     if (cost == 0) return true;
     final balance = await getBalance();
     return balance >= cost;
   }
 
-  /// Deducts cost (if any) and increments today's count. Call this when
-  /// the user actually starts a challenge.
-  Future<void> recordChallengeStart() async {
-    final cost = await getNextChallengeCost();
+  Future<void> recordChallengeStart({int bonusFreeChallenges = 0}) async {
+    final cost = await getNextChallengeCost(bonusFreeChallenges: bonusFreeChallenges);
     if (cost > 0) await _spendCoins(cost);
     await _incrementTodaysCount();
   }
 
   Future<void> recordWin(int reward) async {
-    await _addCoins(reward);
+    await addCoins(reward);
     await _updateStreak();
   }
 
-  Future<void> _updateStreak() async {
+  Future<int> _updateStreak() async {
     final box = await _getBox();
     final lastWinDate = box.get('last_win_date') as String?;
     final streak = box.get('streak', defaultValue: 0) as int;
@@ -97,23 +92,31 @@ class CoinWalletStore {
     final yesterdayKey = '${yesterday.year}-${yesterday.month}-${yesterday.day}';
 
     if (lastWinDate == _todayKey) {
-      return; // already counted today
+      return streak;
     } else if (lastWinDate == yesterdayKey) {
       final newStreak = streak + 1;
       await box.put('streak', newStreak);
       await box.put('last_win_date', _todayKey);
       if (newStreak >= 7) {
-        await _addCoins(100);
-        await box.put('streak', 0); // reset after bonus
+        await addCoins(100);
+        await box.put('streak', 0);
+        return 0;
       }
+      return newStreak;
     } else {
       await box.put('streak', 1);
       await box.put('last_win_date', _todayKey);
+      return 1;
     }
   }
 
   Future<int> getStreak() async {
     final box = await _getBox();
     return box.get('streak', defaultValue: 0) as int;
+  }
+
+  Future<void> clearAll() async {
+    final box = await _getBox();
+    await box.clear();
   }
 }
