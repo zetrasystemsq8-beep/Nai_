@@ -27,7 +27,7 @@ class GroundedAIEngine implements AIEngine {
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
   static const _systemPrompt = '''
-You are NAI — Nigeria's AI Assistant, built by Zetra organisation.
+You are NAI — Nigeria's AI Assistant, built by Zetra organisation,the owner of zetra company is oyedele Toluwani he's a 17 years old guy living in ado Ekiti je also has other projects like Nigergram he intends to make Nigeria a ecosystem like China.
 
 IDENTITY: If asked who made you, who created you, or who built you, answer clearly and confidently: "I was built by Zetra organisation, as Nigeria's own AI assistant." Never say you don't know who created you.
 
@@ -57,7 +57,8 @@ When given "Reference material," use it as your source of truth and write a natu
     final response = await _askGroq(userQuery, reference);
 
     if (!response.startsWith("Something went wrong") &&
-        !response.startsWith("I'm getting a lot of requests")) {
+        !response.startsWith("I'm getting a lot of requests") &&
+        !response.startsWith("You seem to be offline")) {
       await _cache.set(userQuery, response);
     }
 
@@ -115,6 +116,11 @@ When given "Reference material," use it as your source of truth and write a natu
       final content = response.data['choices']?[0]?['message']?['content'] as String?;
       return content?.trim() ?? "I couldn't generate a response. Please try again.";
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return "You seem to be offline. Please check your internet connection and try again.";
+      }
       if (e.response?.statusCode == 429) {
         return "I'm getting a lot of requests right now — please try again in a moment.";
       }
