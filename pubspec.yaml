@@ -1,114 +1,49 @@
-name: nai
-description: NAI - Nigeria's AI Assistant
-publish_to: "none"
-version: 1.0.0+1
+name: Flutter CI
 
-environment:
-  sdk: ">=3.9.0 <4.0.0"
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
 
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  # Firebase
-  firebase_core: ^3.8.0
-  firebase_auth: ^5.3.3
+    steps:
+      - uses: actions/checkout@v4
 
-  # Navigation
-  go_router: ^17.1.0
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.5'
+          channel: 'stable'
 
-  # Networking
-  internet_connection_checker_plus: ^2.9.1+2
-  dio: ^5.9.2
-  http: ^1.6.0
+      - run: flutter pub get
 
-  # State Management
-  fpdart: ^1.2.0
-  equatable: ^2.0.7
-  flutter_riverpod: ^3.2.1
+      - name: Generate app icon and splash screen
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
 
-  # Storage
-  hive_ce: ^2.19.3
-  hive_ce_flutter: ^2.3.4
-  shared_preferences: ^2.5.4
-  flutter_secure_storage: ^10.0.0
+      - name: Create .env file
+        run: |
+          echo "NEWS_API_KEY=${{ secrets.NEWS_API_KEY }}" >> .env
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
-  # Images & SVG
-  cached_network_image: ^3.4.1
-  flutter_svg: ^2.2.4
+      - name: Ensure platform folders exist
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create --platforms=android .
+          fi
 
-  # Icons
-  iconsax_plus: ^1.0.0
+      - name: Set NAI app label
+        run: |
+          sed -i 's/android:label="[^"]*"/android:label="NAI"/' android/app/src/main/AndroidManifest.xml
 
-  # Shimmer / Skeleton
-  skeletonizer: ^2.1.3
+      - run: flutter build apk --release
 
-  # Responsive UI
-  flutter_screenutil: ^5.9.3
-
-  # Animations
-  flutter_animate: ^4.5.2
-  smooth_page_indicator: ^2.0.1
-
-  # Environment
-  flutter_dotenv: ^6.0.0
-
-  # Logging
-  logger: ^2.6.2
-
-  # Media
-  image_picker: ^1.2.1
-  file_picker: ^10.3.10
-
-  # Utilities
-  path_provider: ^2.1.4
-  url_launcher: ^6.3.1
-  permission_handler: ^12.0.1
-  geolocator: ^14.0.2
-  uuid: ^4.5.1
-
-  # Device & System
-  device_info_plus: ^11.2.0
-  app_version_update: ^6.2.0
-
-  # Localization
-  easy_localization: ^3.0.8
-
-  flutter_native_splash: ^2.4.7
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-  build_runner: ^2.12.2
-  hive_ce_generator: ^1.11.1
-  flutter_launcher_icons: ^0.14.3
-
-dependency_overrides:
-  test_api: 0.7.6
-
-flutter:
-  uses-material-design: true
-
-  assets:
-    - assets/
-    - assets/images/
-    - assets/icons/
-    - assets/translations/
-    - .env
-
-flutter_launcher_icons:
-  android: true
-  ios: false
-  image_path: "assets/icons/nai_logo.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "#0F1115"
-  adaptive_icon_foreground: "assets/icons/nai_logo.png"
-
-flutter_native_splash:
-  color: "#0F1115"
-  image: "assets/icons/nai_logo.png"
-  android_12:
-    image: "assets/icons/nai_logo.png"
-    color: "#0F1115"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
