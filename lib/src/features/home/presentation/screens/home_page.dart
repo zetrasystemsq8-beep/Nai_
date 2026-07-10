@@ -12,7 +12,7 @@ import 'package:nai/src/features/chat/presentation/widgets/markdown_message.dart
 import 'package:nai/src/features/chat/presentation/widgets/message_action_bar.dart';
 
 // Screens
-import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
+import 'package:nai/src/features/challenges/presentation/screens/challenges_screen.dart';
 import 'package:nai/src/features/settings/presentation/screens/settings_screen.dart';
 import 'package:nai/src/features/chat/presentation/screens/chat_history_screen.dart';
 
