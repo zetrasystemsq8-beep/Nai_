@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/imports/core_imports.dart';
 import 'src/imports/packages_imports.dart';
@@ -13,6 +14,11 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
 
   await Firebase.initializeApp();
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+  );
 
   await AppConfig.init();
   await HiveService.instance.init();
