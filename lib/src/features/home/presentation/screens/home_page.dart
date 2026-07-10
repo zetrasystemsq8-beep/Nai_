@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:nai/src/imports/core_imports.dart';
@@ -8,8 +9,8 @@ import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 import 'package:nai/src/features/chat/domain/chat_message.dart';
 import 'package:nai/src/features/chat/presentation/widgets/animated_reveal_text.dart';
-import 'package:nai/src/features/chat/presentation/widgets/markdown_message.dart';
 import 'package:nai/src/features/chat/presentation/widgets/message_action_bar.dart';
+import 'package:nai/src/features/challenges/presentation/providers/challenge_provider.dart';
 
 // Screens
 import 'package:nai/src/features/challenges/presentation/screens/challenges_screen.dart';
@@ -34,7 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     _screens = [
       const _ChatTabContent(),
       const ChatHistoryScreen(),
-      const NigeriaNewsScreen(),
+      const ChallengesScreen(),
       const SettingsScreen(),
     ];
   }
@@ -53,6 +54,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
+          HapticFeedback.selectionClick();
           setState(() {
             _selectedIndex = index;
           });
@@ -67,8 +69,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             label: 'History',
           ),
           NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.document),
-            label: 'News',
+            icon: Icon(IconsaxPlusLinear.cup),
+            label: 'Challenges',
           ),
           NavigationDestination(
             icon: Icon(IconsaxPlusLinear.setting),
@@ -79,6 +81,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 }
+
+// ===== SUGGESTED PROMPTS =====
+const List<String> _suggestedPrompts = [
+  "What's happening in Nigeria today?",
+  "Explain how blockchain works",
+  "Give me a business idea for Nigeria",
+  "Help me write a CV summary",
+];
 
 // ===== CHAT TAB CONTENT =====
 class _ChatTabContent extends ConsumerStatefulWidget {
@@ -135,6 +145,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   }
 
   void _startNewChat() {
+    HapticFeedback.mediumImpact();
     setState(() {
       _messages.clear();
       _sessionId = const Uuid().v4();
@@ -144,6 +155,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   Future<void> _sendMessage(String message) async {
     final trimmed = message.trim();
     if (trimmed.isEmpty || _isProcessing) return;
+
+    HapticFeedback.lightImpact();
 
     final userMessage = ChatMessage(
       id: const Uuid().v4(),
@@ -169,6 +182,10 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     });
     _scrollToBottom();
 
+    // Track this question for the "Ask NAI 5 questions" daily mission.
+    final gameProgress = ref.read(gameProgressProvider);
+    await gameProgress.recordQuestionAsked();
+
     final response = await _processMessage(trimmed);
 
     final assistantMessage = ChatMessage(
@@ -185,6 +202,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
       _messages.add(assistantMessage);
       _isProcessing = false;
     });
+    HapticFeedback.selectionClick();
     _scrollToBottom();
 
     await _saveSession();
@@ -192,7 +210,6 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
 
   Future<void> _regenerate(int assistantIndex) async {
     if (_isProcessing) return;
-    // Find the user message right before this assistant message.
     int userIndex = assistantIndex - 1;
     if (userIndex < 0 || _messages[userIndex].role != 'user') return;
     final userQuery = _messages[userIndex].content;
@@ -213,6 +230,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   }
 
   void _setReaction(int index, MessageReaction reaction) {
+    HapticFeedback.selectionClick();
     setState(() {
       _messages[index] = _messages[index].copyWith(reaction: reaction);
     });
@@ -243,6 +261,14 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   Future<String> _processMessage(String message) async {
     final aiEngine = ref.read(aiEngineProvider);
     return aiEngine.respond(message);
+  }
+
+  void _showTimestamp(DateTime timestamp) {
+    final formatted =
+        '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sent at $formatted'), duration: const Duration(seconds: 1)),
+    );
   }
 
   @override
@@ -318,6 +344,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                             onReload: isUser || isProcessing
                                 ? null
                                 : () => _regenerate(index),
+                            onLongPress: () => _showTimestamp(message.timestamp),
                           );
                         },
                       ),
@@ -443,6 +470,22 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
+            SizedBox(height: AppSpacing.xl.h),
+            Wrap(
+              spacing: AppSpacing.sm.w,
+              runSpacing: AppSpacing.sm.h,
+              alignment: WrapAlignment.center,
+              children: _suggestedPrompts.map((prompt) {
+                return ActionChip(
+                  label: Text(prompt, style: textTheme.bodySmall),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _sendMessage(prompt);
+                  },
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),
@@ -460,6 +503,7 @@ class _ChatBubble extends StatelessWidget {
     required this.textTheme,
     required this.onReact,
     required this.onReload,
+    required this.onLongPress,
   });
 
   final bool isUser;
@@ -469,6 +513,7 @@ class _ChatBubble extends StatelessWidget {
   final TextTheme textTheme;
   final ValueChanged<MessageReaction>? onReact;
   final VoidCallback? onReload;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -492,35 +537,38 @@ class _ChatBubble extends StatelessWidget {
                 SizedBox(width: AppSpacing.xs.w),
               ],
               Flexible(
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.72,
-                  ),
-                  padding: EdgeInsets.all(AppSpacing.md.w),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? colorScheme.primary
-                        : colorScheme.surfaceContainerHighest,
-                    borderRadius: AppBorders.md.copyWith(
-                      bottomLeft: isUser ? bubbleRadius : Radius.zero,
-                      bottomRight: isUser ? Radius.zero : bubbleRadius,
+                child: GestureDetector(
+                  onLongPress: onLongPress,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.72,
                     ),
+                    padding: EdgeInsets.all(AppSpacing.md.w),
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: AppBorders.md.copyWith(
+                        bottomLeft: isUser ? bubbleRadius : Radius.zero,
+                        bottomRight: isUser ? Radius.zero : bubbleRadius,
+                      ),
+                    ),
+                    child: isProcessing
+                        ? const _TypingIndicator()
+                        : isUser
+                            ? Text(
+                                message.content,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onPrimary,
+                                ),
+                              )
+                            : AnimatedRevealText(
+                                text: message.content,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
                   ),
-                  child: isProcessing
-                      ? const _TypingIndicator()
-                      : isUser
-                          ? Text(
-                              message.content,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onPrimary,
-                              ),
-                            )
-                          : MarkdownMessage(
-                              content: message.content,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
                 ),
               ),
             ],
