@@ -14,6 +14,19 @@ extension ChallengeDifficultyValue on ChallengeDifficulty {
     }
   }
 
+  int get xpReward {
+    switch (this) {
+      case ChallengeDifficulty.easy:
+        return 10;
+      case ChallengeDifficulty.medium:
+        return 20;
+      case ChallengeDifficulty.hard:
+        return 40;
+      case ChallengeDifficulty.expert:
+        return 80;
+    }
+  }
+
   String get label {
     switch (this) {
       case ChallengeDifficulty.easy:
@@ -29,16 +42,26 @@ extension ChallengeDifficultyValue on ChallengeDifficulty {
 }
 
 const List<String> challengeCategories = [
-  'Nigeria Trivia',
+  'Nigeria',
+  'Africa',
+  'World',
   'Mathematics',
   'English',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'History',
+  'Geography',
   'Programming',
   'AI',
-  'History',
-  'Science',
-  'Word Guess',
-  'Logic Puzzle',
-  'Picture-less Riddle',
+  'Cybersecurity',
+  'Business',
+  'Finance',
+  'Sports',
+  'Movies',
+  'Music',
+  'Logic',
+  'Riddles',
 ];
 
 class Challenge {
