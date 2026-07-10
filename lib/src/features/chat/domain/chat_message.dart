@@ -1,21 +1,39 @@
+enum MessageReaction { none, liked, disliked }
+
 class ChatMessage {
   final String id;
   final String role; // 'user' or 'assistant'
   final String content;
   final DateTime timestamp;
+  final MessageReaction reaction;
 
   const ChatMessage({
     required this.id,
     required this.role,
     required this.content,
     required this.timestamp,
+    this.reaction = MessageReaction.none,
   });
+
+  ChatMessage copyWith({
+    String? content,
+    MessageReaction? reaction,
+  }) {
+    return ChatMessage(
+      id: id,
+      role: role,
+      content: content ?? this.content,
+      timestamp: timestamp,
+      reaction: reaction ?? this.reaction,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'role': role,
         'content': content,
         'timestamp': timestamp.toIso8601String(),
+        'reaction': reaction.name,
       };
 
   factory ChatMessage.fromJson(Map<dynamic, dynamic> json) {
@@ -24,6 +42,10 @@ class ChatMessage {
       role: json['role'] as String,
       content: json['content'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      reaction: MessageReaction.values.firstWhere(
+        (r) => r.name == (json['reaction'] as String? ?? 'none'),
+        orElse: () => MessageReaction.none,
+      ),
     );
   }
 }
