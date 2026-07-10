@@ -8,6 +8,8 @@ import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 import 'package:nai/src/features/chat/domain/chat_message.dart';
 import 'package:nai/src/features/chat/presentation/widgets/animated_reveal_text.dart';
+import 'package:nai/src/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:nai/src/features/chat/presentation/widgets/message_action_bar.dart';
 
 // Screens
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
@@ -92,20 +94,32 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   final List<ChatMessage> _messages = [];
   final _historyStore = ChatHistoryStore();
   bool _isProcessing = false;
+  bool _showScrollToBottom = false;
 
-  late final String _sessionId;
+  late String _sessionId;
 
   @override
   void initState() {
     super.initState();
     _sessionId = const Uuid().v4();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final isNearBottom = _scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100;
+    if (_showScrollToBottom == isNearBottom) {
+      setState(() => _showScrollToBottom = !isNearBottom);
+    }
   }
 
   void _scrollToBottom() {
@@ -117,6 +131,13 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
           curve: Curves.easeOut,
         );
       }
+    });
+  }
+
+  void _startNewChat() {
+    setState(() {
+      _messages.clear();
+      _sessionId = const Uuid().v4();
     });
   }
 
@@ -167,6 +188,35 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     _scrollToBottom();
 
     await _saveSession();
+  }
+
+  Future<void> _regenerate(int assistantIndex) async {
+    if (_isProcessing) return;
+    // Find the user message right before this assistant message.
+    int userIndex = assistantIndex - 1;
+    if (userIndex < 0 || _messages[userIndex].role != 'user') return;
+    final userQuery = _messages[userIndex].content;
+
+    setState(() {
+      _isProcessing = true;
+      _messages[assistantIndex] = _messages[assistantIndex].copyWith(content: '...');
+    });
+
+    final response = await _processMessage(userQuery);
+
+    setState(() {
+      _messages[assistantIndex] = _messages[assistantIndex].copyWith(content: response);
+      _isProcessing = false;
+    });
+
+    await _saveSession();
+  }
+
+  void _setReaction(int index, MessageReaction reaction) {
+    setState(() {
+      _messages[index] = _messages[index].copyWith(reaction: reaction);
+    });
+    _saveSession();
   }
 
   Future<void> _saveSession() async {
@@ -230,96 +280,125 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
             ),
           ],
         ),
-      ),
-      body: Column(
-        children: [
-          // Chat Messages
-          Expanded(
-            child: _messages.isEmpty
-                ? _buildEmptyState(context)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.all(AppSpacing.md.w),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      final isUser = message.role == 'user';
-                      final isProcessing = _isProcessing &&
-                          index == _messages.length - 1 &&
-                          !isUser;
-
-                      return _ChatBubble(
-                        isUser: isUser,
-                        content: message.content,
-                        isProcessing: isProcessing,
-                        colorScheme: colorScheme,
-                        textTheme: textTheme,
-                      );
-                    },
-                  ),
+        actions: [
+          IconButton(
+            icon: const Icon(IconsaxPlusLinear.add_circle),
+            tooltip: 'New Chat',
+            onPressed: _messages.isEmpty ? null : _startNewChat,
           ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: _messages.isEmpty
+                    ? _buildEmptyState(context)
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(AppSpacing.md.w),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final message = _messages[index];
+                          final isUser = message.role == 'user';
+                          final isProcessing = _isProcessing &&
+                              message.content == '...' &&
+                              !isUser;
 
-          // Input Field
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md.w,
-              vertical: AppSpacing.sm.h,
-            ),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: 120.h),
-                    child: TextField(
-                      controller: _messageController,
-                      enabled: !_isProcessing,
-                      minLines: 1,
-                      maxLines: 5,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      decoration: InputDecoration(
-                        hintText: 'Ask me about Nigeria...',
-                        border: OutlineInputBorder(
-                          borderRadius: AppBorders.lg,
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: colorScheme.surfaceContainerHighest,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md.w,
-                          vertical: AppSpacing.sm.h,
-                        ),
+                          return _ChatBubble(
+                            isUser: isUser,
+                            message: message,
+                            isProcessing: isProcessing,
+                            colorScheme: colorScheme,
+                            textTheme: textTheme,
+                            onReact: isUser
+                                ? null
+                                : (reaction) => _setReaction(index, reaction),
+                            onReload: isUser || isProcessing
+                                ? null
+                                : () => _regenerate(index),
+                          );
+                        },
                       ),
+              ),
+
+              // Input Field
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md.w,
+                  vertical: AppSpacing.sm.h,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: colorScheme.outlineVariant,
+                      width: 0.5,
                     ),
                   ),
                 ),
-                SizedBox(width: AppSpacing.sm.w),
-                IconButton.filled(
-                  onPressed: _isProcessing ? null : () => _sendMessage(_messageController.text),
-                  icon: _isProcessing
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.w,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: 120.h),
+                        child: TextField(
+                          controller: _messageController,
+                          enabled: !_isProcessing,
+                          minLines: 1,
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          decoration: InputDecoration(
+                            hintText: 'Ask me about Nigeria...',
+                            border: OutlineInputBorder(
+                              borderRadius: AppBorders.lg,
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surfaceContainerHighest,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md.w,
+                              vertical: AppSpacing.sm.h,
+                            ),
                           ),
-                        )
-                      : const Icon(IconsaxPlusLinear.send),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.sm.w),
+                    IconButton.filled(
+                      onPressed: _isProcessing
+                          ? null
+                          : () => _sendMessage(_messageController.text),
+                      icon: _isProcessing
+                          ? SizedBox(
+                              width: 20.w,
+                              height: 20.w,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.onPrimary,
+                              ),
+                            )
+                          : const Icon(IconsaxPlusLinear.send),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (_showScrollToBottom)
+            Positioned(
+              right: AppSpacing.md.w,
+              bottom: 90.h,
+              child: FloatingActionButton.small(
+                onPressed: _scrollToBottom,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                foregroundColor: colorScheme.onSurface,
+                child: const Icon(Icons.arrow_downward),
+              ),
+            ),
         ],
       ),
     );
@@ -375,17 +454,21 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
 class _ChatBubble extends StatelessWidget {
   const _ChatBubble({
     required this.isUser,
-    required this.content,
+    required this.message,
     required this.isProcessing,
     required this.colorScheme,
     required this.textTheme,
+    required this.onReact,
+    required this.onReload,
   });
 
   final bool isUser;
-  final String content;
+  final ChatMessage message;
   final bool isProcessing;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
+  final ValueChanged<MessageReaction>? onReact;
+  final VoidCallback? onReload;
 
   @override
   Widget build(BuildContext context) {
@@ -397,46 +480,62 @@ class _ChatBubble extends StatelessWidget {
         left: isUser ? AppSpacing.xl.w : 0,
         right: isUser ? 0 : AppSpacing.xl.w,
       ),
-      child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (!isUser) ...[
-            _AiAvatar(colorScheme: colorScheme),
-            SizedBox(width: AppSpacing.xs.w),
-          ],
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.72,
-              ),
-              padding: EdgeInsets.all(AppSpacing.md.w),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? colorScheme.primary
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: AppBorders.md.copyWith(
-                  bottomLeft: isUser ? bubbleRadius : Radius.zero,
-                  bottomRight: isUser ? Radius.zero : bubbleRadius,
+          Row(
+            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isUser) ...[
+                _AiAvatar(colorScheme: colorScheme),
+                SizedBox(width: AppSpacing.xs.w),
+              ],
+              Flexible(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.72,
+                  ),
+                  padding: EdgeInsets.all(AppSpacing.md.w),
+                  decoration: BoxDecoration(
+                    color: isUser
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerHighest,
+                    borderRadius: AppBorders.md.copyWith(
+                      bottomLeft: isUser ? bubbleRadius : Radius.zero,
+                      bottomRight: isUser ? Radius.zero : bubbleRadius,
+                    ),
+                  ),
+                  child: isProcessing
+                      ? const _TypingIndicator()
+                      : isUser
+                          ? Text(
+                              message.content,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onPrimary,
+                              ),
+                            )
+                          : MarkdownMessage(
+                              content: message.content,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
                 ),
               ),
-              child: isProcessing
-                  ? const _TypingIndicator()
-                  : isUser
-                      ? Text(
-                          content,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onPrimary,
-                          ),
-                        )
-                      : AnimatedRevealText(
-                          text: content,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-            ),
+            ],
           ),
+          if (!isUser && !isProcessing && onReact != null && onReload != null)
+            Padding(
+              padding: EdgeInsets.only(left: 36.w, top: 2.h),
+              child: MessageActionBar(
+                content: message.content,
+                reaction: message.reaction,
+                onReact: onReact!,
+                onReload: onReload!,
+                colorScheme: colorScheme,
+              ),
+            ),
         ],
       ),
     );
