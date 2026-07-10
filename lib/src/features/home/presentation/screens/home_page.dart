@@ -7,6 +7,7 @@ import 'package:nai/src/features/auth/presentation/providers/session_provider.da
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nai/src/features/chat/presentation/providers/ai_engine_provider.dart';
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
+import 'package:nai/src/features/chat/data/rate_limiter.dart';
 import 'package:nai/src/features/chat/domain/chat_message.dart';
 import 'package:nai/src/features/chat/presentation/widgets/animated_reveal_text.dart';
 import 'package:nai/src/features/chat/presentation/widgets/message_action_bar.dart';
@@ -27,9 +28,6 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
 
-  // Changing this key forces ChatHistoryScreen to fully rebuild (rerun
-  // initState -> _load()) every time the History tab is selected, since
-  // IndexedStack keeps tabs alive and won't otherwise refresh them.
   Key _historyKey = UniqueKey();
 
   @override
@@ -57,7 +55,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           setState(() {
             _selectedIndex = index;
             if (index == 1) {
-              // Force History to reload fresh sessions every time it's opened.
               _historyKey = UniqueKey();
             }
           });
@@ -106,6 +103,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final _historyStore = ChatHistoryStore();
+  final _rateLimiter = RateLimiter();
   bool _isProcessing = false;
   bool _showScrollToBottom = false;
 
@@ -159,6 +157,20 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     final trimmed = message.trim();
     if (trimmed.isEmpty || _isProcessing) return;
 
+    // Rate limit check — protects the shared Groq quota from being
+    // drained by any single heavy user while on a limited tier.
+    final canSend = await _rateLimiter.canSendMessage();
+    if (!canSend) {
+      final minutesLeft = await _rateLimiter.getMinutesUntilReset();
+      if (mounted) {
+        showGlobalToast(
+          message: "You've reached your hourly message limit. Try again in $minutesLeft minutes.",
+          status: 'error',
+        );
+      }
+      return;
+    }
+
     HapticFeedback.lightImpact();
 
     final userMessage = ChatMessage(
@@ -185,6 +197,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     });
     _scrollToBottom();
 
+    await _rateLimiter.recordMessageSent();
+
     final gameProgress = ref.read(gameProgressProvider);
     await gameProgress.recordQuestionAsked();
 
@@ -207,13 +221,24 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     HapticFeedback.selectionClick();
     _scrollToBottom();
 
-    // Save immediately after every exchange so History always has the
-    // latest data the instant its tab is opened.
     await _saveSession();
   }
 
   Future<void> _regenerate(int assistantIndex) async {
     if (_isProcessing) return;
+
+    final canSend = await _rateLimiter.canSendMessage();
+    if (!canSend) {
+      final minutesLeft = await _rateLimiter.getMinutesUntilReset();
+      if (mounted) {
+        showGlobalToast(
+          message: "You've reached your hourly message limit. Try again in $minutesLeft minutes.",
+          status: 'error',
+        );
+      }
+      return;
+    }
+
     int userIndex = assistantIndex - 1;
     if (userIndex < 0 || _messages[userIndex].role != 'user') return;
     final userQuery = _messages[userIndex].content;
@@ -222,6 +247,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
       _isProcessing = true;
       _messages[assistantIndex] = _messages[assistantIndex].copyWith(content: '...');
     });
+
+    await _rateLimiter.recordMessageSent();
 
     final response = await _processMessage(userQuery);
 
