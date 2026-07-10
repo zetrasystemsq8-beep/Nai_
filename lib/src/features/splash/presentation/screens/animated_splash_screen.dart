@@ -1,9 +1,8 @@
 import 'dart:async';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
-/// Custom animated splash shown right after Flutter's engine starts —
-/// native splash (flutter_native_splash) can't animate, this can.
 class AnimatedSplashScreen extends StatefulWidget {
   const AnimatedSplashScreen({super.key, required this.onComplete});
 
@@ -37,6 +36,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
       curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
     );
 
+    FlutterNativeSplash.remove();
     _controller.forward();
 
     Timer(const Duration(milliseconds: 2000), widget.onComplete);
