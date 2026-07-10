@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nai/src/routing/global_navigator.dart';
 import 'package:nai/src/routing/app_routes.dart';
 
+import 'package:nai/src/features/splash/presentation/screens/animated_splash_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/login_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/signup_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/forgot_password_screen.dart';
@@ -39,11 +40,16 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
-  initialLocation: AppRoutes.onboarding,
+  initialLocation: AppRoutes.splash,
   refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
   redirect: (context, state) {
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
     final currentPath = state.matchedLocation;
+
+    // Splash always plays uninterrupted, regardless of login state.
+    if (currentPath == AppRoutes.splash) {
+      return null;
+    }
 
     final isAuthRoute = currentPath == AppRoutes.login ||
         currentPath == AppRoutes.signup ||
@@ -64,6 +70,13 @@ final GoRouter appRouter = GoRouter(
     return null; // no redirect needed
   },
   routes: <RouteBase>[
+    GoRoute(
+      path: AppRoutes.splash,
+      name: 'splash',
+      builder: (context, state) => AnimatedSplashScreen(
+        onComplete: () => context.go(AppRoutes.onboarding),
+      ),
+    ),
     GoRoute(
       path: AppRoutes.onboarding,
       name: 'onboarding',
