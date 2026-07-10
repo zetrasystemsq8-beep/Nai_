@@ -1,6 +1,6 @@
 # nai
 
-Generated with the Flutter Scaffolding Wizard.
+Generated with the Flutter Scaffolding Wizard by zetra company.
 
 ## What's inside
 - Opinionated theme with Material 3
