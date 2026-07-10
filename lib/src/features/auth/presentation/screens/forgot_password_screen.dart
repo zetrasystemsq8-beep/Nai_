@@ -110,7 +110,7 @@ class _ForgotPasswordView extends StatelessWidget {
                       ),
                       SizedBox(height: AppSpacing.lg.h),
                       AppButton(
-                        label: 'Send Reset Link',
+                        label: 'auth.send_reset_link'.tr(),
                         isLoading: isLoading,
                         onPressed: isLoading ? null : onForgotPassword,
                         width: ButtonSize.large,
