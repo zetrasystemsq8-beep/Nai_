@@ -20,6 +20,11 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Generate app icon and splash screen
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
+
       - name: Create .env file
         run: |
           echo "NEWS_API_KEY=${{ secrets.NEWS_API_KEY }}" >> .env
