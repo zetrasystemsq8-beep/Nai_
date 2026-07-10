@@ -12,7 +12,8 @@ class ChatHistoryScreen extends StatefulWidget {
   State<ChatHistoryScreen> createState() => _ChatHistoryScreenState();
 }
 
-class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
+class _ChatHistoryScreenState extends State<ChatHistoryScreen>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   final _store = ChatHistoryStore();
   final _searchController = TextEditingController();
 
@@ -22,6 +23,9 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
 
   bool _selectionMode = false;
   final Set<String> _selectedIds = {};
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -37,36 +41,47 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     super.dispose();
   }
 
+  /// Called every time this tab is scrolled into view within the
+  /// IndexedStack — ensures newly saved sessions always show up without
+  /// needing a manual pull-to-refresh.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _load();
+  }
+
   Future<void> _load() async {
     final sessions = await _store.getAllSessions();
     if (mounted) {
       setState(() {
         _allSessions = sessions;
-        _filteredSessions = sessions;
+        _filteredSessions = _searchController.text.isEmpty
+            ? sessions
+            : _filterSessions(sessions, _searchController.text);
         _loading = false;
       });
     }
   }
 
+  List<ChatSession> _filterSessions(List<ChatSession> sessions, String rawQuery) {
+    final query = rawQuery.trim().toLowerCase();
+    if (query.isEmpty) return sessions;
+    return sessions.where((s) {
+      final inTitle = s.title.toLowerCase().contains(query);
+      final inMessages = s.messages.any((m) => m.content.toLowerCase().contains(query));
+      return inTitle || inMessages;
+    }).toList();
+  }
+
   void _onSearchChanged() {
-    final query = _searchController.text.trim().toLowerCase();
     setState(() {
-      if (query.isEmpty) {
-        _filteredSessions = _allSessions;
-      } else {
-        _filteredSessions = _allSessions.where((s) {
-          final inTitle = s.title.toLowerCase().contains(query);
-          final inMessages = s.messages.any((m) => m.content.toLowerCase().contains(query));
-          return inTitle || inMessages;
-        }).toList();
-      }
+      _filteredSessions = _filterSessions(_allSessions, _searchController.text);
     });
   }
 
   Future<void> _delete(String id) async {
     await _store.deleteSession(id);
     await _load();
-    _onSearchChanged();
   }
 
   Future<void> _deleteSelected() async {
@@ -97,7 +112,6 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
         _selectionMode = false;
       });
       await _load();
-      _onSearchChanged();
     }
   }
 
@@ -128,7 +142,6 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     if (newTitle != null && newTitle.isNotEmpty) {
       await _store.renameSession(session.id, newTitle);
       await _load();
-      _onSearchChanged();
     }
   }
 
@@ -152,6 +165,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = context.theme;
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -251,15 +265,18 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                                         ? colorScheme.primary.withValues(alpha: 0.1)
                                         : null,
                                     child: ListTile(
-                                      onTap: () {
+                                      onTap: () async {
                                         if (_selectionMode) {
                                           _toggleSelection(session.id);
                                         } else {
-                                          Navigator.of(context).push(
+                                          await Navigator.of(context).push(
                                             MaterialPageRoute(
                                               builder: (_) => ChatSessionDetailScreen(session: session),
                                             ),
                                           );
+                                          // Refresh in case the conversation
+                                          // was continued and updated.
+                                          _load();
                                         }
                                       },
                                       onLongPress: () {
