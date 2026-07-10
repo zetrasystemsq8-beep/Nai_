@@ -3,58 +3,47 @@
     "get_started": "Continue"
   },
   "onboarding": {
-    "onboarding_title_1": "Welcome to NAI",
-    "onboarding_subtitle_1": "Nigeria's AI Assistant.\nAsk questions, learn, discover and get instant AI help.",
-    "onboarding_title_2": "News That Matters",
-    "onboarding_subtitle_2": "Stay updated with the latest Nigerian news,\ngovernment updates and important events.",
-    "onboarding_title_3": "One AI for Nigeria",
-    "onboarding_subtitle_3": "Chat, search, learn and explore everything about Nigeria\nfrom one intelligent assistant."
+    "onboarding_title_1": "Nigeria's AI Assistant",
+    "onboarding_subtitle_1": "Ask questions, discover Nigeria, learn, work,\nand get AI assistance instantly.",
+    "onboarding_title_2": "Discover\nFriends Nearby",
+    "onboarding_subtitle_2": "See where your friends are traveling and\nexplore the world together.",
+    "onboarding_title_3": "Stay Updated\nwith Top Places",
+    "onboarding_subtitle_3": "Find trending destinations and must-see attractions,\nall tailored to enhance your travel plans."
   },
   "home": {
     "home_title": "Home",
-    "welcome_home": "Welcome to NAI!",
-    "home_subtitle": "Nigeria's AI Assistant is ready to help you."
+    "welcome_home": "Welcome Home!",
+    "home_subtitle": "You have successfully completed the onboarding process."
   },
   "auth": {
-    "log_in": "Welcome to NAI",
-    "log_in_subtitle": "Nigeria's AI Assistant",
-
-    "email": "Email address",
+    "log_in": "Welcome Back",
+    "log_in_subtitle": "Sign in to continue to NAI",
+    "email": "Email",
     "email_required": "Email is required",
-    "email_invalid": "Enter a valid email address",
-
+    "email_invalid": "Enter a valid email",
     "password": "Password",
     "password_required": "Password is required",
     "password_too_short": "Password must be at least 6 characters",
-
     "remember_me": "Remember me",
-    "forgot_password": "Forgot password?",
-
+    "forgot_password": "Forgot Password",
     "login_button": "Continue",
-
-    "dont_have_account": "New to NAI? ",
-    "sign_up": "Create one",
-
-    "create_account": "Create your NAI account",
+    "dont_have_account": "Don't have an account? ",
+    "sign_up": "Sign Up",
+    "create_account": "Create NAI Account",
     "create_account_subtitle": "Join Nigeria's AI Assistant",
-
-    "name": "Full name",
-    "name_required": "Full name is required",
-
-    "confirm_password": "Confirm password",
-    "confirm_password_required": "Please confirm your password",
+    "name": "Name",
+    "name_required": "Name is required",
+    "confirm_password": "Confirm Password",
+    "confirm_password_required": "Confirm password is required",
     "passwords_do_not_match": "Passwords do not match",
-
     "create_account_button": "Create Account",
-
-    "already_have_account": "Already have an account? ",
-    "sign_in": "Sign in",
-
-    "or_continue_with": "Or continue with",
-
-    "forgot_password_title": "Reset Password",
-    "forgot_password_subtitle": "Enter your email address and we'll send you a password reset link.",
-    "reset_link_sent": "Password reset email sent.",
-    "back_to_login": "Back to Sign In"
+    "already_have_account": "Already using NAI? ",
+    "sign_in": "Sign In",
+    "or_continue_with": "Or Continue With Account",
+    "forgot_password_title": "Forgot Password",
+    "forgot_password_subtitle": "Enter your email address to receive a reset link\nand regain access to your account.",
+    "reset_link_sent": "Password reset link sent to your email.",
+    "back_to_login": "Back to Login",
+    "send_reset_link": "Send Reset Link"
   }
 }
