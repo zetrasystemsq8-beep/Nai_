@@ -14,8 +14,6 @@ class ChallengeGenerator {
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
-  /// Picks a difficulty with expert being rare, per the "only occasionally"
-  /// rule — weighted random selection.
   ChallengeDifficulty _pickDifficulty() {
     final roll = Random().nextInt(100);
     if (roll < 45) return ChallengeDifficulty.easy;
@@ -68,6 +66,20 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
         correctAnswer: (parsed['answer'] as String? ?? '').trim(),
         createdAt: DateTime.now(),
       );
+    } on DioException catch (e) {
+      final isOffline = e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout;
+      return Challenge(
+        id: const Uuid().v4(),
+        category: category,
+        difficulty: difficulty,
+        question: isOffline
+            ? "You're offline — connect to the internet to get a challenge."
+            : 'Could not generate a challenge right now. Please try again.',
+        correctAnswer: '',
+        createdAt: DateTime.now(),
+      );
     } catch (e) {
       return Challenge(
         id: const Uuid().v4(),
@@ -80,12 +92,9 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
     }
   }
 
-  /// Uses the AI to judge free-text answers loosely (handles typos,
-  /// alternate phrasing) rather than requiring an exact string match.
   Future<bool> checkAnswer(Challenge challenge, String userAnswer) async {
     if (challenge.correctAnswer.isEmpty) return false;
 
-    // Fast path: exact-ish match, no API call needed.
     final normalizedCorrect = challenge.correctAnswer.trim().toLowerCase();
     final normalizedUser = userAnswer.trim().toLowerCase();
     if (normalizedCorrect == normalizedUser) return true;
