@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/features/settings/presentation/providers/theme_provider.dart';
 import 'package:nai/src/features/settings/presentation/providers/text_scale_provider.dart';
+import 'package:nai/src/core/widgets/offline_banner.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -29,6 +30,12 @@ class App extends ConsumerWidget {
       locale: context.locale,
       builder: (context, child) {
         Widget current = child!;
+        current = Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(child: current),
+          ],
+        );
         current = MediaQuery(
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(textScale.scaleFactor),
