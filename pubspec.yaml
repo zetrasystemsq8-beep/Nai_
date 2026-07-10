@@ -15,6 +15,9 @@ dependencies:
   firebase_core: ^3.8.0
   firebase_auth: ^5.3.3
 
+  # Supabase
+  supabase_flutter: ^2.8.0
+
   # Navigation
   go_router: ^17.1.0
 
