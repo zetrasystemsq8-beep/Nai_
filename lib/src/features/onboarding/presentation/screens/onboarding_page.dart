@@ -1,4 +1,5 @@
 import 'package:nai/src/imports/imports.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -56,7 +57,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onGetStarted() {
-    context.go(AppRoutes.login);
+    final isLastPage = _currentIndex == _onboardingData.length - 1;
+    if (isLastPage) {
+      context.go(AppRoutes.login);
+    } else {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -64,6 +73,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final theme = context.theme;
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final isLastPage = _currentIndex == _onboardingData.length - 1;
 
     return _OnboardingView(
       theme: theme,
@@ -72,8 +82,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
       pageController: _pageController,
       currentIndex: _currentIndex,
       onboardingData: _onboardingData,
+      isLastPage: isLastPage,
       onPageChanged: (index) => setState(() => _currentIndex = index),
       onGetStarted: _onGetStarted,
+      onSkip: () => context.go(AppRoutes.login),
     );
   }
 }
@@ -86,8 +98,10 @@ class _OnboardingView extends StatelessWidget {
     required this.pageController,
     required this.currentIndex,
     required this.onboardingData,
+    required this.isLastPage,
     required this.onPageChanged,
     required this.onGetStarted,
+    required this.onSkip,
   });
 
   final ThemeData theme;
@@ -96,8 +110,10 @@ class _OnboardingView extends StatelessWidget {
   final PageController pageController;
   final int currentIndex;
   final List<Map<String, dynamic>> onboardingData;
+  final bool isLastPage;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onGetStarted;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -111,13 +127,31 @@ class _OnboardingView extends StatelessWidget {
                 top: AppSpacing.lg.h,
                 bottom: AppSpacing.md.h,
               ),
-              child: Text(
-                'NAI',
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.primary,
-                  fontSize: 26.sp,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(width: 48.w),
+                  Text(
+                    'NAI',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                      fontSize: 26.sp,
+                    ),
+                  ),
+                  if (!isLastPage)
+                    TextButton(
+                      onPressed: onSkip,
+                      child: Text(
+                        'Skip',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    SizedBox(width: 48.w),
+                ],
               ),
             ),
 
@@ -169,17 +203,33 @@ class _OnboardingView extends StatelessWidget {
                         ),
                       ),
 
-                      SizedBox(height: 40.h),
+                      SizedBox(height: 32.h),
                     ],
                   );
                 },
               ),
             ),
 
+            // Page indicator dots — makes it visually obvious there are
+            // multiple slides to swipe through.
+            SmoothPageIndicator(
+              controller: pageController,
+              count: onboardingData.length,
+              effect: WormEffect(
+                dotHeight: 8.h,
+                dotWidth: 8.w,
+                spacing: 8.w,
+                activeDotColor: colorScheme.primary,
+                dotColor: colorScheme.outlineVariant,
+              ),
+            ),
+
+            SizedBox(height: AppSpacing.lg.h),
+
             Padding(
               padding: EdgeInsets.all(AppSpacing.xl.w),
               child: AppButton(
-                label: 'shared.get_started'.tr(),
+                label: isLastPage ? 'shared.get_started'.tr() : 'Next',
                 onPressed: onGetStarted,
                 variant: ButtonVariant.primary,
                 width: ButtonSize.medium,
