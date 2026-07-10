@@ -27,29 +27,28 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      const _ChatTabContent(),
-      const ChatHistoryScreen(),
-      const ChallengesScreen(),
-      const SettingsScreen(),
-    ];
-  }
+  // Changing this key forces ChatHistoryScreen to fully rebuild (rerun
+  // initState -> _load()) every time the History tab is selected, since
+  // IndexedStack keeps tabs alive and won't otherwise refresh them.
+  Key _historyKey = UniqueKey();
 
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
     final colorScheme = theme.colorScheme;
 
+    final screens = [
+      const _ChatTabContent(),
+      ChatHistoryScreen(key: _historyKey),
+      const ChallengesScreen(),
+      const SettingsScreen(),
+    ];
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -57,6 +56,10 @@ class _HomePageState extends ConsumerState<HomePage> {
           HapticFeedback.selectionClick();
           setState(() {
             _selectedIndex = index;
+            if (index == 1) {
+              // Force History to reload fresh sessions every time it's opened.
+              _historyKey = UniqueKey();
+            }
           });
         },
         destinations: const [
@@ -182,7 +185,6 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     });
     _scrollToBottom();
 
-    // Track this question for the "Ask NAI 5 questions" daily mission.
     final gameProgress = ref.read(gameProgressProvider);
     await gameProgress.recordQuestionAsked();
 
@@ -205,6 +207,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     HapticFeedback.selectionClick();
     _scrollToBottom();
 
+    // Save immediately after every exchange so History always has the
+    // latest data the instant its tab is opened.
     await _saveSession();
   }
 
