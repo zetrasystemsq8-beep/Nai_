@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:nai/src/features/nigeria/domain/repositories/news_repository.dart';
+import 'package:nai/src/features/nigeria/data/nigeria_news_rss.dart';
 import 'package:nai/src/features/nigeria/domain/repositories/wiki_repository.dart';
 
 import '../domain/ai_engine.dart';
@@ -10,7 +10,7 @@ import 'nigeria_sources.dart';
 import 'supabase_knowledge_source.dart';
 
 class GroundedAIEngine implements AIEngine {
-  final NewsRepository _newsRepository;
+  final NigeriaNewsRSS _newsRss;
   final WikiRepository _wikiRepository;
   final ResponseCache _cache;
   final SupabaseKnowledgeSource _supabaseSource = SupabaseKnowledgeSource();
@@ -20,11 +20,11 @@ class GroundedAIEngine implements AIEngine {
   static const _model = 'llama-3.3-70b-versatile';
 
   GroundedAIEngine({
-    required NewsRepository newsRepository,
     required WikiRepository wikiRepository,
+    NigeriaNewsRSS? newsRss,
     ResponseCache? cache,
-  })  : _newsRepository = newsRepository,
-        _wikiRepository = wikiRepository,
+  })  : _wikiRepository = wikiRepository,
+        _newsRss = newsRss ?? NigeriaNewsRSS(),
         _cache = cache ?? ResponseCache();
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
@@ -79,12 +79,10 @@ When given "Reference material," use it as your source of truth and write a natu
   Future<String?> _gatherReference(String query) async {
     final buffer = StringBuffer();
 
-    final newsResult = await _newsRepository.searchNews(query: query, page: 1, pageSize: 3);
-    newsResult.fold((_) {}, (articles) {
-      for (final a in articles) {
-        buffer.writeln('- [News] ${a.title}: ${a.description}');
-      }
-    });
+    final headlines = await _newsRss.fetchHeadlines(searchQuery: query);
+    for (final article in headlines.take(3)) {
+      buffer.writeln('- [News - ${article['source']}] ${article['title']}: ${article['description']}');
+    }
 
     final wikiResult = await _wikiRepository.searchWiki(query: query, page: 1, pageSize: 2);
     wikiResult.fold((_) {}, (entries) {
@@ -126,8 +124,6 @@ When given "Reference material," use it as your source of truth and write a natu
           'model': _model,
           'messages': [
             {'role': 'system', 'content': _systemPrompt},
-            // Recent conversation history, so short follow-ups like "ok"
-            // or "why" are understood in context instead of in isolation.
             ...history,
             {'role': 'user', 'content': userContent},
           ],
