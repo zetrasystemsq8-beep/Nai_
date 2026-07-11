@@ -27,7 +27,6 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   int _selectedIndex = 0;
-
   Key _historyKey = UniqueKey();
 
   @override
@@ -60,29 +59,16 @@ class _HomePageState extends ConsumerState<HomePage> {
           });
         },
         destinations: const [
-          NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.message),
-            label: 'Chat',
-          ),
-          NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.clock),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.cup),
-            label: 'Challenges',
-          ),
-          NavigationDestination(
-            icon: Icon(IconsaxPlusLinear.setting),
-            label: 'Settings',
-          ),
+          NavigationDestination(icon: Icon(IconsaxPlusLinear.message), label: 'Chat'),
+          NavigationDestination(icon: Icon(IconsaxPlusLinear.clock), label: 'History'),
+          NavigationDestination(icon: Icon(IconsaxPlusLinear.cup), label: 'Challenges'),
+          NavigationDestination(icon: Icon(IconsaxPlusLinear.setting), label: 'Settings'),
         ],
       ),
     );
   }
 }
 
-// ===== SUGGESTED PROMPTS =====
 const List<String> _suggestedPrompts = [
   "What's happening in Nigeria today?",
   "Explain how blockchain works",
@@ -90,7 +76,6 @@ const List<String> _suggestedPrompts = [
   "Help me write a CV summary",
 ];
 
-// ===== CHAT TAB CONTENT =====
 class _ChatTabContent extends ConsumerStatefulWidget {
   const _ChatTabContent();
 
@@ -153,12 +138,20 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     });
   }
 
+  /// Builds recent conversation turns in the {role, content} format Groq
+  /// expects, so short follow-ups are understood in context.
+  List<Map<String, String>> _buildHistory() {
+    final recent = _messages.where((m) => m.id != 'typing').toList();
+    final last10 = recent.length > 10 ? recent.sublist(recent.length - 10) : recent;
+    return last10
+        .map((m) => {'role': m.role == 'user' ? 'user' : 'assistant', 'content': m.content})
+        .toList();
+  }
+
   Future<void> _sendMessage(String message) async {
     final trimmed = message.trim();
     if (trimmed.isEmpty || _isProcessing) return;
 
-    // Rate limit check — protects the shared Groq quota from being
-    // drained by any single heavy user while on a limited tier.
     final canSend = await _rateLimiter.canSendMessage();
     if (!canSend) {
       final minutesLeft = await _rateLimiter.getMinutesUntilReset();
@@ -172,6 +165,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     }
 
     HapticFeedback.lightImpact();
+
+    final history = _buildHistory();
 
     final userMessage = ChatMessage(
       id: const Uuid().v4(),
@@ -188,12 +183,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     _scrollToBottom();
 
     setState(() {
-      _messages.add(ChatMessage(
-        id: 'typing',
-        role: 'assistant',
-        content: '...',
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(ChatMessage(id: 'typing', role: 'assistant', content: '...', timestamp: DateTime.now()));
     });
     _scrollToBottom();
 
@@ -202,7 +192,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     final gameProgress = ref.read(gameProgressProvider);
     await gameProgress.recordQuestionAsked();
 
-    final response = await _processMessage(trimmed);
+    final aiEngine = ref.read(aiEngineProvider);
+    final response = await aiEngine.respond(trimmed, history: history);
 
     final assistantMessage = ChatMessage(
       id: const Uuid().v4(),
@@ -242,6 +233,10 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     int userIndex = assistantIndex - 1;
     if (userIndex < 0 || _messages[userIndex].role != 'user') return;
     final userQuery = _messages[userIndex].content;
+    final historyBeforeThis = _messages.sublist(0, userIndex).where((m) => m.id != 'typing').toList();
+    final history = historyBeforeThis
+        .map((m) => {'role': m.role == 'user' ? 'user' : 'assistant', 'content': m.content})
+        .toList();
 
     setState(() {
       _isProcessing = true;
@@ -250,7 +245,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
 
     await _rateLimiter.recordMessageSent();
 
-    final response = await _processMessage(userQuery);
+    final aiEngine = ref.read(aiEngineProvider);
+    final response = await aiEngine.respond(userQuery, history: history);
 
     setState(() {
       _messages[assistantIndex] = _messages[assistantIndex].copyWith(content: response);
@@ -271,10 +267,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   Future<void> _saveSession() async {
     if (_messages.isEmpty) return;
 
-    final firstUserMessage = _messages.firstWhere(
-      (m) => m.role == 'user',
-      orElse: () => _messages.first,
-    );
+    final firstUserMessage = _messages.firstWhere((m) => m.role == 'user', orElse: () => _messages.first);
     final title = firstUserMessage.content.length > 40
         ? '${firstUserMessage.content.substring(0, 40)}...'
         : firstUserMessage.content;
@@ -289,14 +282,8 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
     );
   }
 
-  Future<String> _processMessage(String message) async {
-    final aiEngine = ref.read(aiEngineProvider);
-    return aiEngine.respond(message);
-  }
-
   void _showTimestamp(DateTime timestamp) {
-    final formatted =
-        '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+    final formatted = '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Sent at $formatted'), duration: const Duration(seconds: 1)),
     );
@@ -318,23 +305,13 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
             CircleAvatar(
               radius: 16.r,
               backgroundColor: colorScheme.primary,
-              child: Text(
-                'N',
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.sp,
-                ),
-              ),
+              child: Text('N',
+                  style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 12.sp)),
             ),
             SizedBox(width: AppSpacing.sm.w),
-            Text(
-              'NAI Assistant',
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
+            Text('NAI Assistant',
+                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
           ],
         ),
         actions: [
@@ -354,14 +331,12 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                     ? _buildEmptyState(context)
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: EdgeInsets.all(AppSpacing.md.w),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
                           final isUser = message.role == 'user';
-                          final isProcessing = _isProcessing &&
-                              message.content == '...' &&
-                              !isUser;
+                          final isProcessing = _isProcessing && message.content == '...' && !isUser;
 
                           return _ChatBubble(
                             isUser: isUser,
@@ -369,32 +344,18 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                             isProcessing: isProcessing,
                             colorScheme: colorScheme,
                             textTheme: textTheme,
-                            onReact: isUser
-                                ? null
-                                : (reaction) => _setReaction(index, reaction),
-                            onReload: isUser || isProcessing
-                                ? null
-                                : () => _regenerate(index),
+                            onReact: isUser ? null : (reaction) => _setReaction(index, reaction),
+                            onReload: isUser || isProcessing ? null : () => _regenerate(index),
                             onLongPress: () => _showTimestamp(message.timestamp),
                           );
                         },
                       ),
               ),
-
-              // Input Field
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md.w,
-                  vertical: AppSpacing.sm.h,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
                 decoration: BoxDecoration(
                   color: colorScheme.surface,
-                  border: Border(
-                    top: BorderSide(
-                      color: colorScheme.outlineVariant,
-                      width: 0.5,
-                    ),
-                  ),
+                  border: Border(top: BorderSide(color: colorScheme.outlineVariant, width: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -411,34 +372,23 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
                           textInputAction: TextInputAction.newline,
                           decoration: InputDecoration(
                             hintText: 'Ask me about Nigeria...',
-                            border: OutlineInputBorder(
-                              borderRadius: AppBorders.lg,
-                              borderSide: BorderSide.none,
-                            ),
+                            border: OutlineInputBorder(borderRadius: AppBorders.lg, borderSide: BorderSide.none),
                             filled: true,
                             fillColor: colorScheme.surfaceContainerHighest,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md.w,
-                              vertical: AppSpacing.sm.h,
-                            ),
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
                           ),
                         ),
                       ),
                     ),
                     SizedBox(width: AppSpacing.sm.w),
                     IconButton.filled(
-                      onPressed: _isProcessing
-                          ? null
-                          : () => _sendMessage(_messageController.text),
+                      onPressed: _isProcessing ? null : () => _sendMessage(_messageController.text),
                       icon: _isProcessing
                           ? SizedBox(
                               width: 20.w,
                               height: 20.w,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colorScheme.onPrimary,
-                              ),
-                            )
+                              child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary))
                           : const Icon(IconsaxPlusLinear.send),
                     ),
                   ],
@@ -475,32 +425,16 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
           children: [
             Container(
               padding: EdgeInsets.all(AppSpacing.xl.w),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                IconsaxPlusLinear.message,
-                size: 64.sp,
-                color: colorScheme.primary,
-              ),
+              decoration: BoxDecoration(color: colorScheme.primary.withValues(alpha: 0.08), shape: BoxShape.circle),
+              child: Icon(IconsaxPlusLinear.message, size: 64.sp, color: colorScheme.primary),
             ),
             SizedBox(height: AppSpacing.lg.h),
-            Text(
-              'NAI - Nigeria\'s AI Assistant',
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
+            Text('NAI - Nigeria\'s AI Assistant',
+                style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
             SizedBox(height: AppSpacing.sm.h),
-            Text(
-              'Ask me anything about Nigeria.\nI\'m here to help! 🇳🇬',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
+            Text('Ask me anything about Nigeria.\nI\'m here to help! 🇳🇬',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
             SizedBox(height: AppSpacing.xl.h),
             Wrap(
               spacing: AppSpacing.sm.w,
@@ -524,7 +458,7 @@ class _ChatTabContentState extends ConsumerState<_ChatTabContent> {
   }
 }
 
-// ===== CHAT BUBBLE WIDGET =====
+// ===== CHAT BUBBLE — full-width, document-style for AI, compact for user =====
 class _ChatBubble extends StatelessWidget {
   const _ChatBubble({
     required this.isUser,
@@ -548,83 +482,70 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bubbleRadius = AppBorders.md.topLeft;
+    if (isUser) {
+      // User messages stay compact, right-aligned — like a normal sent text.
+      return Padding(
+        padding: EdgeInsets.fromLTRB(AppSpacing.xl.w, AppSpacing.xs.h, AppSpacing.md.w, AppSpacing.xs.h),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+              padding: EdgeInsets.all(AppSpacing.md.w),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: AppBorders.md.copyWith(bottomRight: Radius.zero),
+              ),
+              child: Text(message.content, style: textTheme.bodySmall?.copyWith(color: colorScheme.onPrimary)),
+            ),
+          ),
+        ),
+      );
+    }
 
+    // AI messages: full width, document-style, no bubble background.
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: AppSpacing.sm.h,
-        left: isUser ? AppSpacing.xl.w : 0,
-        right: isUser ? 0 : AppSpacing.xl.w,
-      ),
-      child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (!isUser) ...[
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.sm.h),
+      child: GestureDetector(
+        onLongPress: onLongPress,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
                 _AiAvatar(colorScheme: colorScheme),
-                SizedBox(width: AppSpacing.xs.w),
+                SizedBox(width: AppSpacing.sm.w),
+                Text('NAI', style: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
               ],
-              Flexible(
-                child: GestureDetector(
-                  onLongPress: onLongPress,
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.72,
-                    ),
-                    padding: EdgeInsets.all(AppSpacing.md.w),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? colorScheme.primary
-                          : colorScheme.surfaceContainerHighest,
-                      borderRadius: AppBorders.md.copyWith(
-                        bottomLeft: isUser ? bubbleRadius : Radius.zero,
-                        bottomRight: isUser ? Radius.zero : bubbleRadius,
-                      ),
-                    ),
-                    child: isProcessing
-                        ? const _TypingIndicator()
-                        : isUser
-                            ? Text(
-                                message.content,
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onPrimary,
-                                ),
-                              )
-                            : AnimatedRevealText(
-                                text: message.content,
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
+            ),
+            SizedBox(height: AppSpacing.sm.h),
+            isProcessing
+                ? const _TypingIndicator()
+                : AnimatedRevealText(
+                    text: message.content,
+                    style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface, height: 1.5),
                   ),
+            if (!isProcessing && onReact != null && onReload != null)
+              Padding(
+                padding: EdgeInsets.only(top: AppSpacing.xs.h),
+                child: MessageActionBar(
+                  content: message.content,
+                  reaction: message.reaction,
+                  onReact: onReact!,
+                  onReload: onReload!,
+                  colorScheme: colorScheme,
                 ),
               ),
-            ],
-          ),
-          if (!isUser && !isProcessing && onReact != null && onReload != null)
-            Padding(
-              padding: EdgeInsets.only(left: 36.w, top: 2.h),
-              child: MessageActionBar(
-                content: message.content,
-                reaction: message.reaction,
-                onReact: onReact!,
-                onReload: onReload!,
-                colorScheme: colorScheme,
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// ===== AI AVATAR =====
 class _AiAvatar extends StatelessWidget {
   const _AiAvatar({required this.colorScheme});
-
   final ColorScheme colorScheme;
 
   @override
@@ -632,19 +553,11 @@ class _AiAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: 14.r,
       backgroundColor: colorScheme.primary,
-      child: Text(
-        'N',
-        style: TextStyle(
-          color: colorScheme.onPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 12.sp,
-        ),
-      ),
+      child: Text('N', style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 12.sp)),
     );
   }
 }
 
-// ===== ANIMATED TYPING INDICATOR =====
 class _TypingIndicator extends StatefulWidget {
   const _TypingIndicator();
 
@@ -652,17 +565,13 @@ class _TypingIndicator extends StatefulWidget {
   State<_TypingIndicator> createState() => _TypingIndicatorState();
 }
 
-class _TypingIndicatorState extends State<_TypingIndicator>
-    with SingleTickerProviderStateMixin {
+class _TypingIndicatorState extends State<_TypingIndicator> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
   }
 
   @override
@@ -674,7 +583,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.theme.colorScheme;
-
     return SizedBox(
       width: 40.w,
       height: 16.h,
@@ -692,10 +600,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                 child: Container(
                   width: 8.w,
                   height: 8.w,
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: colorScheme.onSurfaceVariant, shape: BoxShape.circle),
                 ),
               );
             }),
