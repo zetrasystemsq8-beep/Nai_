@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
@@ -24,6 +25,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
   bool _checking = false;
   String? _resultMessage;
   bool? _wasCorrect;
+  int _coinsWonThisRound = 0;
 
   int _balance = 0;
   int _streak = 0;
@@ -146,19 +148,22 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
       final newStreak = await wallet.getStreak();
       await progress.updateBestStreak(newStreak);
 
+      HapticFeedback.mediumImpact();
+
       setState(() {
         _checking = false;
         _wasCorrect = true;
-        _resultMessage = hasDouble
-            ? "Correct! Double reward: +$reward coins! 🎉"
-            : "Correct! You earned $reward coins.";
+        _coinsWonThisRound = reward;
+        _resultMessage = hasDouble ? 'Double Reward!' : 'Correct!';
       });
     } else {
       await progress.recordCompletionForAchievements();
+      HapticFeedback.heavyImpact();
       setState(() {
         _checking = false;
         _wasCorrect = false;
-        _resultMessage = "Not quite. The answer was: ${challenge.correctAnswer}";
+        _coinsWonThisRound = 0;
+        _resultMessage = 'Not Quite';
       });
     }
 
@@ -306,31 +311,111 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen>
                 isLoading: _checking,
                 isFullWidth: true,
               ),
-            ] else ...[
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(AppSpacing.md.w),
-                decoration: BoxDecoration(
-                  color: (_wasCorrect ?? false) ? Colors.green.withValues(alpha: 0.1) : colorScheme.error.withValues(alpha: 0.1),
-                  borderRadius: AppBorders.lg,
-                ),
-                child: Text(
-                  _resultMessage!,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: (_wasCorrect ?? false) ? Colors.green : colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+            ] else
+              _ResultCard(
+                isCorrect: _wasCorrect ?? false,
+                resultMessage: _resultMessage!,
+                coinsWon: _coinsWonThisRound,
+                correctAnswer: _currentChallenge!.correctAnswer,
+                onNext: () => setState(() => _currentChallenge = null),
               ),
-              SizedBox(height: AppSpacing.md.h),
-              AppButton(
-                label: 'New Challenge',
-                onPressed: () => setState(() => _currentChallenge = null),
-                isFullWidth: true,
-              ),
-            ],
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ===== BIG, CLEAR WIN/LOSE RESULT CARD =====
+class _ResultCard extends StatefulWidget {
+  const _ResultCard({
+    required this.isCorrect,
+    required this.resultMessage,
+    required this.coinsWon,
+    required this.correctAnswer,
+    required this.onNext,
+  });
+
+  final bool isCorrect;
+  final String resultMessage;
+  final int coinsWon;
+  final String correctAnswer;
+  final VoidCallback onNext;
+
+  @override
+  State<_ResultCard> createState() => _ResultCardState();
+}
+
+class _ResultCardState extends State<_ResultCard> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.7, end: 1.08).chain(CurveTween(curve: Curves.easeOutBack)), weight: 65),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+    ]).animate(_controller);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.theme.colorScheme;
+    final textTheme = context.theme.textTheme;
+    final accentColor = widget.isCorrect ? const Color(0xFF00A854) : colorScheme.error;
+
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(AppSpacing.lg.w),
+        decoration: BoxDecoration(
+          color: accentColor.withValues(alpha: 0.12),
+          borderRadius: AppBorders.lg,
+          border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              widget.isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              size: 64.sp,
+              color: accentColor,
+            ),
+            SizedBox(height: AppSpacing.sm.h),
+            Text(
+              widget.resultMessage,
+              style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: accentColor),
+            ),
+            SizedBox(height: AppSpacing.xs.h),
+            if (widget.isCorrect)
+              Text(
+                '+${widget.coinsWon} coins earned',
+                style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+              )
+            else
+              Text(
+                'The answer was: ${widget.correctAnswer}',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+            SizedBox(height: AppSpacing.lg.h),
+            AppButton(
+              label: 'Next Challenge',
+              onPressed: widget.onNext,
+              isFullWidth: true,
+              variant: ButtonVariant.primary,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -398,6 +483,7 @@ class _LuckySpinButtonState extends ConsumerState<_LuckySpinButton> {
     await widget.onSpun();
 
     if (mounted) {
+      HapticFeedback.mediumImpact();
       showDialog(
         context: context,
         builder: (dialogContext) => AlertDialog(
