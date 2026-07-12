@@ -92,6 +92,10 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
     }
   }
 
+  /// Judges free-text answers leniently — accepts spelling mistakes,
+  /// typos, alternate/short forms ("halve" for "half"), synonyms, and
+  /// different phrasing, as long as the core answer is clearly correct.
+  /// Only marks wrong if the actual substance of the answer is incorrect.
   Future<bool> checkAnswer(Challenge challenge, String userAnswer) async {
     if (challenge.correctAnswer.isEmpty) return false;
 
@@ -115,8 +119,18 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
           'messages': [
             {
               'role': 'system',
-              'content':
-                  'You judge quiz answers. Given the correct answer and a user\'s answer, respond ONLY with "true" if the user\'s answer is correct (allowing for typos, case differences, or equivalent phrasing) or "false" if it is not. No other text.',
+              'content': '''
+You are a lenient quiz grader. Mark the user's answer as CORRECT if they clearly know the right answer, even with:
+- Spelling mistakes or typos ("recieve" for "receive")
+- Shorthand, informal, or alternate spellings of the same word ("halve" for "half", "nite" for "night")
+- Different phrasing that means the same thing
+- Missing minor words, capitalization, or punctuation
+- Synonyms that mean the same thing in context
+
+Only mark it INCORRECT if the actual substance/meaning of the answer is wrong, not because of spelling or phrasing differences.
+
+Respond ONLY with the single word "true" or "false", nothing else.
+''',
             },
             {
               'role': 'user',
