@@ -294,8 +294,13 @@ ThemeData _buildTheme(ColorScheme colorScheme, AppColorsExtension customColors) 
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
       backgroundColor: colorScheme.surface,
-      titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-      contentTextStyle: textTheme.bodyMedium,
+      titleTextStyle: textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: colorScheme.onSurface,
+      ),
+      contentTextStyle: textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onSurface,
+      ),
     ),
 
     // Bottom Sheet Theme
