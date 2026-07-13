@@ -9,7 +9,7 @@ class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  ConsumerState<SignupScreen> createState() => _SignupScreenState();
+ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
@@ -45,8 +45,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           Uri.parse("https://zetra-backend.onrender.com/signup"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
-            "email": _emailController.text,
-            "password": _passwordController.text,
+            "email": _emailController.text.trim(),
+            "password": _passwordController.text.trim(),
           }),
         );
 
