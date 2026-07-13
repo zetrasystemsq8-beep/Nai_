@@ -36,8 +36,11 @@ class AuthController extends StateNotifier<bool> {
         }
       },
       (user) {
-        if (rootContext?.mounted ?? false) {
-          rootContext!.pushReplacement(AppRoutes.home);
+        // Only navigate after backend JWT token is confirmed valid
+        // Navigation to home is now handled by SessionListenerWrapper
+        // which waits for AuthRepository.checkAuthState() verification
+        if (context.mounted) {
+          showToast(context, message: 'Login successful', status: 'success');
         }
       },
     );
@@ -56,8 +59,11 @@ class AuthController extends StateNotifier<bool> {
         }
       },
       (user) {
-        if (rootContext?.mounted ?? false) {
-          rootContext!.pushReplacement(AppRoutes.home);
+        // Only navigate after backend JWT token is confirmed valid
+        // Navigation to home is now handled by SessionListenerWrapper
+        // which waits for AuthRepository.checkAuthState() verification
+        if (context.mounted) {
+          showToast(context, message: 'Signup successful', status: 'success');
         }
       },
     );
