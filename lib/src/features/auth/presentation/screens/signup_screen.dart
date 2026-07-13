@@ -39,12 +39,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (!(_formKey.currentState?.validate() ?? false)) return;
       
 
-      ref.read(authControllerProvider.notifier).signUp(
-        context: context, 
-        name: _nameController.text,
-        email: _emailController.text, 
-        password: _passwordController.text,
+      Future<void> handleSignup() async {
+  if (!(_formKey.currentState?.validate() ?? false)) return;
+
+  try {
+    final response = await http.post(
+      Uri.parse("https://zetra-backend.onrender.com/signup"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "email": _emailController.text,
+        "password": _passwordController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Signup successful")),
       );
+      context.push(AppRoutes.login);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Signup failed: ${response.body}")),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
+  }
+      }
+  
     }
 
     return _SignupView(
