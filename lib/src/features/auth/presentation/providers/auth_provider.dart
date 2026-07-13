@@ -23,7 +23,7 @@ class AuthController extends StateNotifier<bool> {
   })  : _repository = repository,
         super(false); // loading state is false
 
-  void login({required BuildContext context, required String email, required String password}) async {
+  Future<void> login({required BuildContext context, required String email, required String password}) async {
     state = true;
     
     final result = await _repository.login(email: email, password: password);
@@ -43,7 +43,7 @@ class AuthController extends StateNotifier<bool> {
     );
   }
 
-  void signUp({required BuildContext context, required String name, required String email, required String password}) async {
+  Future<void> signUp({required BuildContext context, required String name, required String email, required String password}) async {
     state = true;
     
     final result = await _repository.signUp(name: name, email: email, password: password);
@@ -63,7 +63,7 @@ class AuthController extends StateNotifier<bool> {
     );
   }
 
-  void forgotPassword({required BuildContext context, required String email}) async {
+  Future<void> forgotPassword({required BuildContext context, required String email}) async {
     state = true;
     
     final result = await _repository.forgotPassword(email: email);
