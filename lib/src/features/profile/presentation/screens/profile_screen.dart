@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
-import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 
