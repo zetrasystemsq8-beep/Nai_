@@ -31,6 +31,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
       } else if (canPop) {
         context.pop();
       } else {
+        // Only go to authenticated home after backend JWT validation
+        // Users without valid JWT will be redirected by SessionListenerWrapper
         context.go(AppRoutes.home);
       }
     }
