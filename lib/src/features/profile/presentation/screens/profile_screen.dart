@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 import 'package:nai/src/features/chat/data/chat_history_store.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -64,8 +64,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (confirmed == true) {
       await ref.read(authRepositoryProvider).logout();
-      // The router's redirect logic (listening to Firebase auth state)
-      // will automatically send the user to the login screen.
+      // The session listener will automatically redirect to onboarding
     }
   }
 
@@ -73,8 +72,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final colorScheme = context.theme.colorScheme;
     final textTheme = context.theme.textTheme;
-    final user = FirebaseAuth.instance.currentUser;
-    final displayName = user?.displayName?.isNotEmpty == true ? user!.displayName! : 'NAI User';
+    
+    // Get user from session provider instead of Firebase
+    final sessionState = ref.watch(sessionProvider);
+    final user = sessionState.user;
+    
+    final displayName = user?.name?.isNotEmpty == true ? user!.name! : 'NAI User';
     final email = user?.email ?? '';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
