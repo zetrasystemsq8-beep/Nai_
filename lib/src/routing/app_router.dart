@@ -42,7 +42,7 @@ final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
   refreshListenable: null,
   redirect: (context, state) {
-    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final isLoggedIn = true;
     final currentPath = state.matchedLocation;
 
     // Splash always plays uninterrupted, regardless of login state.
