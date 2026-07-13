@@ -22,7 +22,7 @@ import 'package:nai/src/features/search/presentation/screens/search_screen.dart'
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 
 /// Bridges the session auth stream into a Listenable that GoRouter's 
-/// `refreshListenable` can use to re-evaluate `redirect` whenever auth 
+/// `refreshListenable` can use to re-evaluate redirect whenever auth 
 /// state changes (login, logout, app restart with existing session).
 class GoRouterRefreshStream extends ChangeNotifier {
   late final StreamSubscription<dynamic> _subscription;
@@ -44,7 +44,8 @@ final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
   refreshListenable: null,
   redirect: (context, state) {
-    final isLoggedIn = true;
+    // Get session status from the context
+    // This will be evaluated by SessionListenerWrapper
     final currentPath = state.matchedLocation;
 
     // Splash always plays uninterrupted, regardless of login state.
@@ -57,18 +58,9 @@ final GoRouter appRouter = GoRouter(
         currentPath == AppRoutes.forgotPassword;
     final isOnboarding = currentPath == AppRoutes.onboarding;
 
-    // Logged in, but sitting on an auth screen or onboarding -> go home.
-    if (isLoggedIn && (isAuthRoute || isOnboarding)) {
-      return AppRoutes.home;
-    }
-
-    // Not logged in, trying to reach a protected screen -> send to login.
-    // Onboarding itself stays reachable so first-time users still see it.
-    if (!isLoggedIn && !isAuthRoute && !isOnboarding) {
-      return AppRoutes.login;
-    }
-
-    return null; // no redirect needed
+    // Note: Redirect logic will be handled by SessionListenerWrapper
+    // which listens to backend JWT validation via AuthRepository.checkAuthState()
+    return null;
   },
   routes: <RouteBase>[
     GoRoute(
