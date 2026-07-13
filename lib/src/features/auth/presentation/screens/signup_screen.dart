@@ -2,9 +2,6 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -21,7 +18,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  final _secureStorage = const FlutterSecureStorage();
 
   @override
   void dispose() {
@@ -40,58 +36,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final tt = context.theme.textTheme;
 
     Future<void> handleSignup() async {
-      print("SIGNUP BUTTON CLICKED");
-
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      try {
-        final response = await http.post(
-          Uri.parse("https://zetra-backend.onrender.com/api/auth/register"),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "username": _nameController.text.trim(),
-            "email": _emailController.text.trim(),
-            "password": _passwordController.text.trim(),
-          }),
-        );
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final data = jsonDecode(response.body);
-
-          // ✅ Save tokens securely
-          await _secureStorage.write(key: "access_token", value: data["access_token"]);
-          await _secureStorage.write(key: "refresh_token", value: data["refresh_token"]);
-
-          // ✅ Save user info if needed
-          await _secureStorage.write(key: "user", value: jsonEncode(data["user"]));
-
-          final token = await _secureStorage.read(key: "access_token");
-          final responseMe = await http.get(
-            Uri.parse("https://zetra-backend.onrender.com/api/auth/me"),
-            headers: {"Authorization": "Bearer $token"},
-          );
-
-          if (responseMe.statusCode == 200) {
-            final user = jsonDecode(responseMe.body);
-            print("Current user after signup: $user");
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Signup successful")),
-          );
-          context.push(AppRoutes.login);
-        } else {
-          print(response.statusCode);
-          print(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Signup failed ${response.statusCode}: ${response.body}")),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
+      await ref.read(authControllerProvider.notifier).signUp(
+        context: context,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
     }
 
     return _SignupView(
@@ -208,11 +160,11 @@ class _SignupView extends StatelessWidget {
                           icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
                           onPressed: onToggleObscure,
                         ),
-                         validator: (v) {
+                        validator: (v) {
                           if (AppUtils.isBlank(v)) {
                             return 'auth.password_required'.tr();
                           }
-                          if (v!.length < 6) {
+                          if (v!.length < 8) {
                             return 'auth.password_too_short'.tr();
                           }
                           return null;
