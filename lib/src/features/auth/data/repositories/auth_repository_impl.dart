@@ -43,6 +43,10 @@ class AuthRepositoryImpl implements AuthRepository {
         body: jsonEncode({"email": email, "password": password}),
       );
 
+      print("===== LOGIN =====");
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _storage.write(key: "access_token", value: data["access_token"]);
@@ -73,6 +77,10 @@ class AuthRepositoryImpl implements AuthRepository {
           "password": password,
         }),
       );
+
+      print("===== SIGNUP =====");
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
@@ -126,23 +134,34 @@ class AuthRepositoryImpl implements AuthRepository {
   FutureEither<AppUser?> checkAuthState() async {
     try {
       final token = await _storage.read(key: "access_token");
+
+      print("===== CHECK AUTH =====");
+      print("Token: $token");
+
       if (token == null) return right(null);
 
       final response = await http.get(
         Uri.parse("$baseUrl/me"),
-        headers: {"Authorization": "Bearer $token"},
+        headers: {
+          "Authorization": "Bearer $token",
+        },
       );
+
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Adjust if backend wraps user in { "user": { ... } }
-        final userJson = data is Map && data.containsKey("user") ? data["user"] : data;
+        final userJson =
+            data is Map && data.containsKey("user") ? data["user"] : data;
+
         return right(_mapBackendUser(userJson));
       } else {
         return left(ServerFailure("Auth check failed: ${response.body}"));
       }
     } catch (e) {
-      return left(ServerFailure("Auth check failed: ${e.toString()}"));
+      print("CHECK AUTH ERROR: $e");
+      return left(ServerFailure("Auth check failed: $e"));
     }
   }
 }
