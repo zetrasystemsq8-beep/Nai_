@@ -10,12 +10,6 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl();
 });
 
-/// Provides a stream of auth state changes
-final authStateStreamProvider = StreamProvider<AppUser?>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return repo.onAuthStateChanged;
-});
-
 /// Provides the current session state
 final sessionProvider = StateNotifierProvider<SessionNotifier, SessionState>((ref) {
   final repo = ref.read(authRepositoryProvider);
@@ -41,7 +35,6 @@ class SessionState {
 
 class SessionNotifier extends StateNotifier<SessionState> {
   final AuthRepository _repository;
-  StreamSubscription<AppUser?>? _authSub;
 
   SessionNotifier({required AuthRepository repository})
       : _repository = repository,
@@ -50,11 +43,16 @@ class SessionNotifier extends StateNotifier<SessionState> {
   }
 
   Future<void> _init() async {
-    // Check persisted session first
+    // Check backend JWT token validity via AuthRepository.checkAuthState()
+    // This MUST confirm a valid backend JWT token, not Firebase
     final result = await _repository.checkAuthState();
     result.fold(
-      (_) => state = const SessionState(status: SessionStatus.unauthenticated),
+      (_) {
+        // Backend JWT validation failed
+        state = const SessionState(status: SessionStatus.unauthenticated);
+      },
       (user) {
+        // Backend JWT validation successful
         if (user != null) {
           state = SessionState(status: SessionStatus.authenticated, user: user);
         } else {
@@ -62,15 +60,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
         }
       },
     );
-
-    // Listen for future changes
-    _authSub = _repository.onAuthStateChanged.listen((user) {
-      if (user != null) {
-        state = SessionState(status: SessionStatus.authenticated, user: user);
-      } else {
-        state = const SessionState(status: SessionStatus.unauthenticated);
-      }
-    });
   }
 
   Future<void> logout() async {
@@ -80,8 +69,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
   @override
   void dispose() {
-    _authSub?.cancel();
     super.dispose();
   }
 }
-
