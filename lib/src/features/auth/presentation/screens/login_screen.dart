@@ -41,8 +41,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Uri.parse("https://zetra-backend.onrender.com/login"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
-            "email": _emailController.text,
-            "password": _passwordController.text,
+            "email": _emailController.text.trim(),
+            "password": _passwordController.text.trim(),
           }),
         );
 
@@ -50,7 +50,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Login successful")),
           );
-          // Navigate to home/dashboard after login
           context.push(AppRoutes.home);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
