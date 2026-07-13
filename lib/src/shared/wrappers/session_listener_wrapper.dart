@@ -14,8 +14,11 @@ class SessionListenerWrapper extends ConsumerWidget {
       if (next.status != SessionStatus.unknown) {
         FlutterNativeSplash.remove();
         if (next.status == SessionStatus.authenticated) {
+          // Backend JWT token is confirmed valid by AuthRepository.checkAuthState()
+          // Only then proceed to home
           context.go(AppRoutes.home);
         } else if (next.status == SessionStatus.unauthenticated) {
+          // Backend JWT validation failed, redirect to onboarding
           context.go(AppRoutes.onboarding);
         }
       }
