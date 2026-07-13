@@ -4,6 +4,7 @@ import 'package:nai/src/imports/packages_imports.dart';
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
@@ -38,38 +39,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     Future<void> handleSignup() async {
       if (!(_formKey.currentState?.validate() ?? false)) return;
-      
 
-      Future<void> handleSignup() async {
-  if (!(_formKey.currentState?.validate() ?? false)) return;
+      try {
+        final response = await http.post(
+          Uri.parse("https://zetra-backend.onrender.com/signup"),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "email": _emailController.text,
+            "password": _passwordController.text,
+          }),
+        );
 
-  try {
-    final response = await http.post(
-      Uri.parse("https://zetra-backend.onrender.com/signup"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": _emailController.text,
-        "password": _passwordController.text,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Signup successful")),
-      );
-      context.push(AppRoutes.login);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Signup failed: ${response.body}")),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  }
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Signup successful")),
+          );
+          context.push(AppRoutes.login);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Signup failed: ${response.body}")),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
       }
-  
     }
 
     return _SignupView(
