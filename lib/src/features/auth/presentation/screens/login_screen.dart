@@ -5,6 +5,7 @@ import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart'
 // ADD THESE TWO LINES BELOW
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final _secureStorage = const FlutterSecureStorage();
 
   @override
   void dispose() {
@@ -48,7 +50,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           }),
         );
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final data = jsonDecode(response.body);
+
+          // ✅ Save tokens securely
+          await _secureStorage.write(key: "access_token", value: data["access_token"]);
+          await _secureStorage.write(key: "refresh_token", value: data["refresh_token"]);
+
+          // ✅ Save user info if needed
+          await _secureStorage.write(key: "user", value: jsonEncode(data["user"]));
+
+          // ✅ Fetch current user
+          final token = await _secureStorage.read(key: "access_token");
+          final responseMe = await http.get(
+            Uri.parse("https://zetra-backend.onrender.com/api/auth/me"),
+            headers: {"Authorization": "Bearer $token"},
+          );
+
+          if (responseMe.statusCode == 200) {
+            final user = jsonDecode(responseMe.body);
+            print("Current user after login: $user");
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Login successful")),
           );
