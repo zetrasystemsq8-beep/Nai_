@@ -9,7 +9,7 @@ class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-ConsumerState<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
@@ -38,26 +38,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final tt = context.theme.textTheme;
 
     Future<void> handleSignup() async {
+      print("SIGNUP BUTTON CLICKED");
+
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
       try {
         final response = await http.post(
-          Uri.parse("https://zetra-backend.onrender.com/signup"),
+          Uri.parse("https://zetra-backend.onrender.com/api/auth/register"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
+            "username": _nameController.text.trim(),
             "email": _emailController.text.trim(),
             "password": _passwordController.text.trim(),
           }),
         );
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Signup successful")),
           );
           context.push(AppRoutes.login);
         } else {
+          print(response.statusCode);
+          print(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Signup failed: ${response.body}")),
+            SnackBar(content: Text("Signup failed ${response.statusCode}: ${response.body}")),
           );
         }
       } catch (e) {
