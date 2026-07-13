@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/imports/core_imports.dart';
@@ -12,8 +11,6 @@ Future<void> main() async {
 
   await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: '.env');
-
-  await Firebase.initializeApp();
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
