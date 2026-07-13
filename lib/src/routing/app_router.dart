@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nai/src/routing/global_navigator.dart';
 import 'package:nai/src/routing/app_routes.dart';
