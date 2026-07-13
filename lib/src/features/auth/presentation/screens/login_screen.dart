@@ -2,6 +2,10 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
 
+// ADD THESE TWO LINES BELOW
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -32,11 +36,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     Future<void> handleLogin() async {
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      ref.read(authControllerProvider.notifier).login(
-        context: context,
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+      try {
+        final response = await http.post(
+          Uri.parse("https://zetra-backend.onrender.com/login"),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "email": _emailController.text,
+            "password": _passwordController.text,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login successful")),
+          );
+          // Navigate to home/dashboard after login
+          context.push(AppRoutes.home);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Login failed: ${response.body}")),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
 
     return _LoginView(
