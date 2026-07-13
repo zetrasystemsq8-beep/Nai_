@@ -34,11 +34,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final tt = context.theme.textTheme;
 
     Future<void> handleLogin() async {
+      print("LOGIN BUTTON CLICKED");
+
       if (!(_formKey.currentState?.validate() ?? false)) return;
 
       try {
         final response = await http.post(
-          Uri.parse("https://zetra-backend.onrender.com/login"),
+          Uri.parse("https://zetra-backend.onrender.com/api/auth/login"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
             "email": _emailController.text.trim(),
@@ -52,8 +54,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
           context.push(AppRoutes.home);
         } else {
+          print(response.statusCode);
+          print(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Login failed: ${response.body}")),
+            SnackBar(content: Text("Login failed ${response.statusCode}: ${response.body}")),
           );
         }
       } catch (e) {
