@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nai/src/routing/global_navigator.dart';
 import 'package:nai/src/routing/app_routes.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:nai/src/features/splash/presentation/screens/animated_splash_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/login_screen.dart';
@@ -18,10 +19,11 @@ import 'package:nai/src/features/nigeria/presentation/screens/wiki_search_screen
 import 'package:nai/src/features/settings/presentation/screens/settings_screen.dart';
 import 'package:nai/src/features/profile/presentation/screens/profile_screen.dart';
 import 'package:nai/src/features/search/presentation/screens/search_screen.dart';
+import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 
-/// Bridges a Stream (Firebase's authStateChanges) into a Listenable that
-/// GoRouter's `refreshListenable` can use to re-evaluate `redirect` whenever
-/// auth state changes (login, logout, app restart with existing session).
+/// Bridges the session auth stream into a Listenable that GoRouter's 
+/// `refreshListenable` can use to re-evaluate `redirect` whenever auth 
+/// state changes (login, logout, app restart with existing session).
 class GoRouterRefreshStream extends ChangeNotifier {
   late final StreamSubscription<dynamic> _subscription;
 
