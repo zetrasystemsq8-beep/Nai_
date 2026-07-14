@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:nai/src/imports/core_imports.dart';
+import 'package:nai/src/app.dart';
 import 'package:nai/src/features/settings/presentation/providers/theme_provider.dart';
 import 'package:nai/src/features/settings/presentation/providers/text_scale_provider.dart';
 import 'package:nai/src/core/widgets/offline_banner.dart';
@@ -24,7 +25,7 @@ class App extends ConsumerWidget {
       theme: buildLightTheme(primaryColorHex: '#008751'),
       darkTheme: buildDarkTheme(primaryColorHex: '#008751'),
       themeMode: themeMode,
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
