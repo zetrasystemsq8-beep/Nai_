@@ -61,6 +61,7 @@ class AuthController extends StateNotifier<bool> {
             message: 'Login successful',
             status: 'success',
           );
+          context.go(AppRoutes.home); // ✅ navigate to homepage
         }
       },
     );
@@ -101,6 +102,7 @@ class AuthController extends StateNotifier<bool> {
             message: 'Signup successful',
             status: 'success',
           );
+          context.go(AppRoutes.home); // ✅ navigate to homepage
         }
       },
     );
