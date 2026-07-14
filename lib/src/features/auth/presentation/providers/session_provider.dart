@@ -49,14 +49,10 @@ class SessionNotifier extends StateNotifier<SessionState> {
     required AuthRepository repository,
   })  : _repository = repository,
         super(const SessionState()) {
-    _init();
+    refreshSession();
   }
 
-  Future<void> _init() async {
-    await refreshSession();
-  }
-
-  /// Re-check the backend JWT and update authentication state.
+  /// Checks whether the stored backend JWT is valid.
   Future<void> refreshSession() async {
     final result = await _repository.checkAuthState();
 
@@ -87,10 +83,5 @@ class SessionNotifier extends StateNotifier<SessionState> {
     state = const SessionState(
       status: SessionStatus.unauthenticated,
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
