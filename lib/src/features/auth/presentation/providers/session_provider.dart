@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:nai/src/features/auth/domain/entities/user.dart';
 import 'package:nai/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:nai/src/features/auth/data/repositories/auth_repository_impl.dart';
