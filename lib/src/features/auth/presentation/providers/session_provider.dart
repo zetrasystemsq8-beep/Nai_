@@ -1,4 +1,4 @@
-import 'package:nai/src/imports/imports.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nai/src/features/auth/domain/entities/user.dart';
 import 'package:nai/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:nai/src/features/auth/data/repositories/auth_repository_impl.dart';
@@ -40,6 +40,8 @@ class SessionState {
       user: user ?? this.user,
     );
   }
+
+  bool get isAuthenticated => status == SessionStatus.authenticated;
 }
 
 class SessionNotifier extends StateNotifier<SessionState> {
@@ -49,8 +51,23 @@ class SessionNotifier extends StateNotifier<SessionState> {
     required AuthRepository repository,
   })  : _repository = repository,
         super(const SessionState()) {
+    // Listen to backend auth state changes
+    _repository.onAuthStateChanged.listen((user) {
+      if (user != null) {
+        state = SessionState(
+          status: SessionStatus.authenticated,
+          user: user,
+        );
+      } else {
+        state = const SessionState(status: SessionStatus.unauthenticated);
+      }
+    });
+
     refreshSession();
   }
+
+  /// Expose auth state changes as a stream for GoRouterRefreshStream
+  Stream<AppUser?> get authStateChanges => _repository.onAuthStateChanged;
 
   /// Checks whether the stored backend JWT is valid.
   Future<void> refreshSession() async {
@@ -79,9 +96,6 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
   Future<void> logout() async {
     await _repository.logout();
-
-    state = const SessionState(
-      status: SessionStatus.unauthenticated,
-    );
+    state = const SessionState(status: SessionStatus.unauthenticated);
   }
 }
