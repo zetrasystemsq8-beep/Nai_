@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   final String baseUrl = "https://zetra-backend.onrender.com/api/auth";
 
+  final _authStateController = StreamController<AppUser?>.broadcast();
+
   AppUser _mapBackendUser(Map<String, dynamic> json) {
     return AppUser(
       id: json["id"].toString(),
@@ -25,10 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Stream<AppUser?> get onAuthStateChanged async* {
-    final result = await checkAuthState();
-    yield result.fold((_) => null, (user) => user);
-  }
+  Stream<AppUser?> get onAuthStateChanged => _authStateController.stream;
 
   @override
   FutureEither<AppUser> login({
@@ -78,7 +78,10 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint("Access Token Saved");
         debugPrint(data["access_token"]);
 
-        return right(_mapBackendUser(data["user"]));
+        final user = _mapBackendUser(data["user"]);
+        _authStateController.add(user);
+
+        return right(user);
       }
 
       return left(ServerFailure(response.body));
@@ -139,7 +142,10 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint("Access Token Saved");
         debugPrint(data["access_token"]);
 
-        return right(_mapBackendUser(data["user"]));
+        final user = _mapBackendUser(data["user"]);
+        _authStateController.add(user);
+
+        return right(user);
       }
 
       return left(ServerFailure(response.body));
@@ -178,6 +184,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   FutureEither<void> logout() async {
     await _storage.deleteAll();
+    _authStateController.add(null);
     return right(null);
   }
 
