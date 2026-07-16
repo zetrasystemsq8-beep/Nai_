@@ -25,8 +25,17 @@ abstract class AuthRepository {
 
   /// Sign out the current user
   FutureEither<void> logout();
-  
+
   /// Check if the user is currently authenticated natively
   FutureEither<AppUser?> checkAuthState();
-}
 
+  /// Confirms the code the user entered against the one sent to
+  /// their ZetraMail inbox, and marks their Zetra ID verified.
+  FutureEither<AppUser> verifyCode({
+    required String code,
+  });
+
+  /// Requests a fresh verification code be sent to the user's
+  /// ZetraMail inbox.
+  FutureEither<void> resendCode();
+}
