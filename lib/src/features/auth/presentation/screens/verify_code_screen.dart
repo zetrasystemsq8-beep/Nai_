@@ -2,13 +2,16 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
+import 'package:nai/src/routing/app_routes.dart';
 
-/// Shown right after signup/login if the account isn't verified
-/// yet. Asks the user to enter the code sitting in their ZetraMail
-/// inbox (inside the Zetra ID app).
+/// Shown whenever the session is "unverified" — right after signup,
+/// or on relaunch if the code was never entered. Asks the user to
+/// enter the code sitting in their ZetraMail inbox (inside the
+/// Zetra ID app). The router's redirect logic sends them home
+/// automatically once verification succeeds.
 class VerifyCodeScreen extends ConsumerStatefulWidget {
-  final VoidCallback onVerified;
-  const VerifyCodeScreen({super.key, required this.onVerified});
+  const VerifyCodeScreen({super.key});
 
   @override
   ConsumerState<VerifyCodeScreen> createState() => _VerifyCodeScreenState();
@@ -45,10 +48,10 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
       (failure) {
         showToast(context, message: failure.message, status: 'error');
       },
-      (user) {
+      (user) async {
         showToast(context, message: 'Zetra ID verified', status: 'success');
-        Navigator.of(context).pop();
-        widget.onVerified();
+        await ref.read(sessionProvider.notifier).refreshSession();
+        if (mounted) context.go(AppRoutes.home);
       },
     );
   }
@@ -71,6 +74,10 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
         showToast(context, message: 'A new code was sent to your ZetraMail', status: 'success');
       },
     );
+  }
+
+  Future<void> _handleLogout() async {
+    await ref.read(sessionProvider.notifier).logout();
   }
 
   @override
@@ -122,6 +129,13 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                   child: Text(
                     _isResending ? 'Sending...' : "Didn't get a code? Resend",
                     style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _handleLogout,
+                  child: Text(
+                    'Use a different account',
+                    style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                 ),
                 SizedBox(height: AppSpacing.xl.h),
