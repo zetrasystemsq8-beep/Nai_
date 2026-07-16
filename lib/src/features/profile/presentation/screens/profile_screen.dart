@@ -77,7 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = sessionState.user;
     
     final displayName = user?.name?.isNotEmpty == true ? user!.name! : 'NAI User';
-    final email = user?.email ?? '';
+    final zetraMail = user?.zetraMail ?? '';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
     return Scaffold(
@@ -117,13 +117,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: AppSpacing.sm.h),
-              Text(
-                email,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+              if (zetraMail.isNotEmpty)
+                Column(
+                  children: [
+                    Text(
+                      'ZetraMail',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xs.h),
+                    Text(
+                      zetraMail,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  'ZetraMail',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
               SizedBox(height: AppSpacing.xxl.h),
               _loadingStats
                   ? const CircularProgressIndicator()
