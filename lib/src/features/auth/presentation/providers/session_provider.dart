@@ -20,6 +20,7 @@ final sessionProvider =
 enum SessionStatus {
   unknown,
   authenticated,
+  unverified,
   unauthenticated,
 }
 
@@ -43,6 +44,10 @@ class SessionState {
   }
 
   bool get isAuthenticated => status == SessionStatus.authenticated;
+
+  /// True when a token exists and belongs to a real account, but the
+  /// account hasn't entered its ZetraMail verification code yet.
+  bool get isUnverified => status == SessionStatus.unverified;
 }
 
 class SessionNotifier extends StateNotifier<SessionState> {
@@ -54,14 +59,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
         super(const SessionState()) {
     // Listen to backend auth state changes
     _repository.onAuthStateChanged.listen((user) {
-      if (user != null) {
-        state = SessionState(
-          status: SessionStatus.authenticated,
-          user: user,
-        );
-      } else {
-        state = const SessionState(status: SessionStatus.unauthenticated);
-      }
+      state = _stateForUser(user);
     });
 
     refreshSession();
@@ -69,6 +67,16 @@ class SessionNotifier extends StateNotifier<SessionState> {
 
   /// Expose auth state changes as a stream for GoRouterRefreshStream
   Stream<AppUser?> get authStateChanges => _repository.onAuthStateChanged;
+
+  SessionState _stateForUser(AppUser? user) {
+    if (user == null) {
+      return const SessionState(status: SessionStatus.unauthenticated);
+    }
+    if (!user.verified) {
+      return SessionState(status: SessionStatus.unverified, user: user);
+    }
+    return SessionState(status: SessionStatus.authenticated, user: user);
+  }
 
   /// Checks whether the stored backend JWT is valid.
   Future<void> refreshSession() async {
@@ -81,16 +89,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
         );
       },
       (user) {
-        if (user != null) {
-          state = SessionState(
-            status: SessionStatus.authenticated,
-            user: user,
-          );
-        } else {
-          state = const SessionState(
-            status: SessionStatus.unauthenticated,
-          );
-        }
+        state = _stateForUser(user);
       },
     );
   }
