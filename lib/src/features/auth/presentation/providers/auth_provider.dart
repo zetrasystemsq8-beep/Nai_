@@ -5,10 +5,6 @@ import 'package:nai/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:nai/src/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl();
-});
-
 final authControllerProvider =
     StateNotifierProvider<AuthController, bool>((ref) {
   return AuthController(
