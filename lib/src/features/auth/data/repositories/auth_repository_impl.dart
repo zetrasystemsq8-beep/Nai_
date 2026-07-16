@@ -24,6 +24,8 @@ class AuthRepositoryImpl implements AuthRepository {
       email: json["email"] ?? "",
       name: json["username"],
       photoUrl: json["photoUrl"],
+      zetraId: json["zetra_id"],
+      verified: json["verified"] == true,
     );
   }
 
@@ -48,7 +50,7 @@ class AuthRepositoryImpl implements AuthRepository {
           "Accept": "application/json",
         },
         body: jsonEncode({
-          "email": email,
+          "identifier": email,
           "password": password,
         }),
       );
@@ -226,6 +228,85 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint("checkAuthState Exception:");
       debugPrint(e.toString());
       return right(null);
+    }
+  }
+
+  @override
+  FutureEither<AppUser> verifyCode({
+    required String code,
+  }) async {
+    try {
+      final token = await _storage.read(key: "access_token");
+      if (token == null || token.isEmpty) {
+        return left(ServerFailure("You're not signed in. Please log in again."));
+      }
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/verify"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"code": code}),
+      );
+
+      debugPrint("===== VERIFY RESPONSE =====");
+      debugPrint("Status: ${response.statusCode}");
+      debugPrint("Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        await _storage.write(key: "user", value: jsonEncode(data));
+
+        final user = _mapBackendUser(data);
+        _authStateController.add(user);
+
+        return right(user);
+      }
+
+      String message = "Invalid or expired code. Please try again.";
+      try {
+        final err = jsonDecode(response.body);
+        if (err["error"] != null) message = err["error"].toString();
+      } catch (_) {}
+
+      return left(ServerFailure(message));
+    } catch (e) {
+      debugPrint(e.toString());
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  FutureEither<void> resendCode() async {
+    try {
+      final token = await _storage.read(key: "access_token");
+      if (token == null || token.isEmpty) {
+        return left(ServerFailure("You're not signed in. Please log in again."));
+      }
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/resend-code"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+
+      debugPrint("===== RESEND CODE RESPONSE =====");
+      debugPrint("Status: ${response.statusCode}");
+      debugPrint("Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return right(null);
+      }
+
+      return left(ServerFailure(response.body));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
     }
   }
 }
