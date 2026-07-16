@@ -25,6 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
       name: json["username"],
       photoUrl: json["photoUrl"],
       zetraId: json["zetra_id"],
+      zetraMail: json["zetramail"],
       verified: json["verified"] == true,
     );
   }
