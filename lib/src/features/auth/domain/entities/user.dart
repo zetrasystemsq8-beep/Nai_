@@ -6,6 +6,7 @@ class AppUser extends Equatable {
   final String? name;
   final String? photoUrl;
   final String? zetraId;
+  final String? zetraMail;
   final bool verified;
 
   const AppUser({
@@ -14,6 +15,7 @@ class AppUser extends Equatable {
     this.name,
     this.photoUrl,
     this.zetraId,
+    this.zetraMail,
     this.verified = false,
   });
 
@@ -23,5 +25,5 @@ class AppUser extends Equatable {
   bool get isNotEmpty => id.isNotEmpty;
 
   @override
-  List<Object?> get props => [id, email, name, photoUrl, zetraId, verified];
+  List<Object?> get props => [id, email, name, photoUrl, zetraId, zetraMail, verified];
 }
