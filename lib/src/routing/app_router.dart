@@ -9,6 +9,7 @@ import 'package:nai/src/features/splash/presentation/screens/animated_splash_scr
 import 'package:nai/src/features/auth/presentation/screens/login_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/signup_screen.dart';
 import 'package:nai/src/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:nai/src/features/auth/presentation/screens/verify_code_screen.dart';
 import 'package:nai/src/features/home/presentation/screens/home_page.dart';
 import 'package:nai/src/features/onboarding/presentation/screens/onboarding_page.dart';
 import 'package:nai/src/features/nigeria/presentation/screens/nigeria_news_screen.dart';
@@ -45,20 +46,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       sessionNotifier.authStateChanges, // 👈 listen to session changes
     ),
     redirect: (context, state) {
-      final isLoggedIn = ref.read(sessionProvider).isAuthenticated;
+      final session = ref.read(sessionProvider);
+      final isLoggedIn = session.isAuthenticated;
+      final isUnverified = session.isUnverified;
+
       final loggingIn = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
+      final onVerifyScreen = state.matchedLocation == AppRoutes.verifyCode;
 
       // Splash always plays uninterrupted
       if (state.matchedLocation == AppRoutes.splash) {
         return null;
       }
 
+      // An account exists but hasn't entered its ZetraMail code yet.
+      // Pin them to the verify screen no matter what — fresh signup,
+      // app relaunch, or coming back from background.
+      if (isUnverified) {
+        return onVerifyScreen ? null : AppRoutes.verifyCode;
+      }
+
       if (!isLoggedIn && !loggingIn) {
         return AppRoutes.login;
       }
-      if (isLoggedIn && loggingIn) {
+      if (isLoggedIn && (loggingIn || onVerifyScreen)) {
         return AppRoutes.home;
       }
       return null;
@@ -90,6 +102,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.forgotPassword,
         name: 'forgotPassword',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyCode,
+        name: 'verifyCode',
+        builder: (context, state) => const VerifyCodeScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,
