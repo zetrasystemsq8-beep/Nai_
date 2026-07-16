@@ -4,7 +4,6 @@ import 'package:nai/src/imports/packages_imports.dart';
 import 'package:nai/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:nai/src/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:nai/src/features/auth/presentation/providers/session_provider.dart';
-import 'package:nai/src/features/auth/presentation/screens/verify_code_screen.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl();
@@ -29,25 +28,13 @@ class AuthController extends StateNotifier<bool> {
         _repository = repository,
         super(false);
 
-  Future<void> _proceedAfterAuth(BuildContext context, bool verified) async {
+  /// Refreshes the session, then attempts to go home. The router's
+  /// redirect logic is the single source of truth for where the
+  /// user actually ends up — verified goes home, unverified gets
+  /// bounced to the code screen automatically.
+  Future<void> _proceedAfterAuth(BuildContext context) async {
     await _ref.read(sessionProvider.notifier).refreshSession();
-
-    if (!context.mounted) return;
-
-    if (!verified) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VerifyCodeScreen(
-            onVerified: () {
-              if (context.mounted) context.go(AppRoutes.home);
-            },
-          ),
-        ),
-      );
-      return;
-    }
-
-    context.go(AppRoutes.home);
+    if (context.mounted) context.go(AppRoutes.home);
   }
 
   Future<void> login({
@@ -82,7 +69,7 @@ class AuthController extends StateNotifier<bool> {
             status: 'success',
           );
         }
-        await _proceedAfterAuth(context, user.verified);
+        await _proceedAfterAuth(context);
       },
     );
   }
@@ -121,7 +108,7 @@ class AuthController extends StateNotifier<bool> {
             status: 'success',
           );
         }
-        await _proceedAfterAuth(context, user.verified);
+        await _proceedAfterAuth(context);
       },
     );
   }
