@@ -18,9 +18,9 @@
   "auth": {
     "log_in": "Welcome Back",
     "log_in_subtitle": "Sign in to continue to NAI",
-    "email": "Email",
-    "email_required": "Email is required",
-    "email_invalid": "Enter a valid email",
+    "email": "ZetraMail",
+    "email_required": "ZetraMail is required",
+    "email_invalid": "Enter a valid ZetraMail",
     "password": "Password",
     "password_required": "Password is required",
     "password_too_short": "Password must be at least 6 characters",
@@ -41,8 +41,8 @@
     "sign_in": "Sign In",
     "or_continue_with": "Or Continue With Account",
     "forgot_password_title": "Forgot Password",
-    "forgot_password_subtitle": "Enter your email address to receive a reset link\nand regain access to your account.",
-    "reset_link_sent": "Password reset link sent to your email.",
+    "forgot_password_subtitle": "Enter your ZetraMail address to receive a reset link\nand regain access to your account.",
+    "reset_link_sent": "Password reset link sent to your ZetraMail.",
     "back_to_login": "Back to Login",
     "send_reset_link": "Send Reset Link"
   }
