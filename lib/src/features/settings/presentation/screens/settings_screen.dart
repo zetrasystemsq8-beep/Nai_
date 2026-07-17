@@ -71,11 +71,11 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Data & Privacy'),
         content: const SingleChildScrollView(
           child: Text(
-            'NAI stores the following data locally on your device:\n\n'
-            '• Your chat conversations, saved on-device so you can revisit them\n'
-            '• Cached AI responses, to answer repeated questions faster\n\n'
-            'Your account (name and email) is managed securely through Firebase Authentication.\n\n'
-            'When you ask NAI a question, it may search public Nigerian news and Wikipedia sources, and send your question to an AI language model to generate a response. No conversation data is sold or shared with advertisers.\n\n'
+            'NAI stores the following data locally on your device:\\n\\n'
+            '• Your chat conversations, saved on-device so you can revisit them\\n'
+            '• Cached AI responses, to answer repeated questions faster\\n\\n'
+            'Your account (name and ZetraMail) is managed securely through our authentication system.\\n\\n'
+            'When you ask NAI a question, it may search public Nigerian news and Wikipedia sources, and send your question to an AI language model to generate a response. No conversation data is sold or shared with advertisers.\\n\\n'
             'You can permanently delete all locally saved conversations at any time using "Clear Chat History" above.',
           ),
         ),
@@ -96,10 +96,10 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Terms of Service'),
         content: const SingleChildScrollView(
           child: Text(
-            'By using NAI, you agree to the following:\n\n'
-            '1. NAI is an AI assistant and may occasionally provide inaccurate or incomplete information. Always verify important facts independently.\n\n'
-            '2. NAI is intended for lawful, respectful use. Do not use NAI to generate harmful, illegal, or abusive content.\n\n'
-            '3. Your use of NAI is at your own discretion. Zetra Systems is not liable for decisions made based on NAI\'s responses.\n\n'
+            'By using NAI, you agree to the following:\\n\\n'
+            '1. NAI is an AI assistant and may occasionally provide inaccurate or incomplete information. Always verify important facts independently.\\n\\n'
+            '2. NAI is intended for lawful, respectful use. Do not use NAI to generate harmful, illegal, or abusive content.\\n\\n'
+            '3. Your use of NAI is at your own discretion. Zetra Systems is not liable for decisions made based on NAI\\'s responses.\\n\\n'
             '4. These terms may be updated as NAI evolves. Continued use of the app constitutes acceptance of any changes.',
           ),
         ),
