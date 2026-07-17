@@ -9,7 +9,7 @@ class ZetraHelpContent {
         HelpTopic(
           title: 'Creating an account',
           content:
-              'Open NAI and tap "Continue" on the welcome screen, then "Create NAI Account" to sign up with your name, email, and password. If you already have an account, tap "Sign In" instead.',
+              'Open NAI and tap "Continue" on the welcome screen, then "Create NAI Account" to sign up with your name, ZetraMail, and password. If you already have an account, tap "Sign In" instead.',
         ),
         HelpTopic(
           title: 'Chatting with NAI',
@@ -19,7 +19,7 @@ class ZetraHelpContent {
         HelpTopic(
           title: "Today's Briefing",
           content:
-              'The News tab shows a short AI-written summary of today\'s top Nigerian stories, refreshed once daily, along with the latest headlines below it.',
+              'The News tab shows a short AI-written summary of today\\'s top Nigerian stories, refreshed once daily, along with the latest headlines below it.',
         ),
         HelpTopic(
           title: 'Viewing past conversations',
@@ -45,7 +45,7 @@ class ZetraHelpContent {
         HelpTopic(
           title: 'Creating an account',
           content:
-              'Download Nigergram and sign up with your email or phone number, then verify your account to get started.',
+              'Download Nigergram and sign up with your ZetraMail or phone number, then verify your account to get started.',
         ),
         HelpTopic(
           title: 'Withdrawing your coins to cash',
