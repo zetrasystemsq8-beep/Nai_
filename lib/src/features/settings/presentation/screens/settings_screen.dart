@@ -99,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
             'By using NAI, you agree to the following:\\n\\n'
             '1. NAI is an AI assistant and may occasionally provide inaccurate or incomplete information. Always verify important facts independently.\\n\\n'
             '2. NAI is intended for lawful, respectful use. Do not use NAI to generate harmful, illegal, or abusive content.\\n\\n'
-            '3. Your use of NAI is at your own discretion. Zetra Systems is not liable for decisions made based on NAI\\'s responses.\\n\\n'
+            '3. Your use of NAI is at your own discretion. Zetra Systems is not liable for decisions made based on NAI\'s responses.\n\n'
             '4. These terms may be updated as NAI evolves. Continued use of the app constitutes acceptance of any changes.',
           ),
         ),
