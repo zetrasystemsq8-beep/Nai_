@@ -93,21 +93,22 @@ class _ForgotPasswordView extends StatelessWidget {
                   child: Column(
                     children: [
                       AppTextField(
-                        controller: emailController,
-                        enabled: !isLoading,
-                        keyboardType: TextInputType.emailAddress,
-                        label: 'auth.email'.tr(),
-                        prefixIcon: const Icon(IconsaxPlusBold.sms),
-                        validator: (v) {
-                          if (AppUtils.isBlank(v)) {
-                            return 'auth.email_required'.tr();
-                          }
-                          if (!AppUtils.isValidEmail(v!)) {
-                            return 'auth.email_invalid'.tr();
-                          }
-                          return null;
-                        },
-                      ),
+  controller: emailController,
+  enabled: !isLoading,
+  label: 'ZetraMail',
+  hint: 'username@zetramail.com',
+  keyboardType: TextInputType.emailAddress,
+  prefixIcon: const Icon(IconsaxPlusBold.sms),
+  validator: (v) {
+    if (AppUtils.isBlank(v)) {
+      return 'Please enter your ZetraMail';
+    }
+    if (!AppUtils.isValidEmail(v!)) {
+      return 'Enter a valid ZetraMail address';
+    }
+    return null;
+  },
+),
                       SizedBox(height: AppSpacing.lg.h),
                       AppButton(
                         label: 'auth.send_reset_link'.tr(),
