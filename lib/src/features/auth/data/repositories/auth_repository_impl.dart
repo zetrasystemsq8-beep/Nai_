@@ -100,45 +100,39 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      debugPrint("===== SIGNUP (Supabase) =====");
+      debugPrint("===== SIGNUP (authenticate existing ZetraMail) =====");
       debugPrint(email);
 
-      final response = await _supabase.auth.signUp(
+      // NAI never creates new accounts. Accounts only exist if they were
+      // created in the Zetra ID app. "Signing up" here means authenticating
+      // against an existing ZetraMail + password — if it's valid, this is
+      // effectively a login. If it's invalid, the ZetraMail doesn't exist
+      // yet (or the password is wrong) and we tell the user to create it
+      // in the Zetra ID app first.
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
-        data: {
-          "full_name": name,
-        },
       );
 
       final user = response.user;
       if (user == null) {
-        return left(ServerFailure("Could not create your account. Please try again."));
+        return left(ServerFailure(
+          "No ZetraMail account found. Please create your ZetraMail in the Zetra ID app first.",
+        ));
       }
 
-      AppUser? appUser = await _fetchAppUser(user.id);
-
-      appUser ??= AppUser(
-        id: user.id,
-        email: email,
-        name: name,
-        photoUrl: null,
-        zetraId: null,
-        zetraMail: email,
-        verified: false,
-      );
-
-      try {
-        await _supabase.rpc('request_otp');
-      } catch (e) {
-        debugPrint("request_otp error: $e");
+      final appUser = await _fetchAppUser(user.id);
+      if (appUser == null) {
+        return left(ServerFailure("Could not load your profile. Please try again."));
       }
 
       _authStateController.add(appUser);
       return right(appUser);
     } on AuthException catch (e) {
       debugPrint("SignUp AuthException: ${e.message}");
-      return left(ServerFailure(e.message));
+      return left(ServerFailure(
+        "No ZetraMail account found. Please create your ZetraMail in the Zetra ID app first.",
+      ));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
