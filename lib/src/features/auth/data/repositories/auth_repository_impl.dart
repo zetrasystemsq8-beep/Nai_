@@ -119,11 +119,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
   final authEmail = result?['auth_email'] ?? email;
 
-  return _authenticate(
-    email: authEmail,
-    password: password,
-    notFoundMessage: "Invalid ZetraMail or password.",
-  );
+  final result = await _supabase
+    .from('profiles')
+    .select('auth_email')
+    .eq('zetramail', email)
+    .maybeSingle();
+
+final authEmail = result?['auth_email'] ?? email;
+
+return _authenticate(
+  email: authEmail,
+  password: password,
+  notFoundMessage: "No ZetraMail account found...",
+);
   }
   @override
   FutureEither<AppUser> signUp({
