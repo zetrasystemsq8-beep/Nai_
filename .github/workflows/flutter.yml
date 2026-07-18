@@ -29,6 +29,8 @@ jobs:
         run: |
           echo "NEWS_API_KEY=${{ secrets.NEWS_API_KEY }}" >> .env
           echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
 
       - name: Ensure platform folders exist
         run: |
