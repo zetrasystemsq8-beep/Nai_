@@ -18,9 +18,16 @@ abstract class AuthRepository {
     required String password,
   });
 
-  /// Send a password reset email
+  /// Requests a password reset code be sent to the user's ZetraMail inbox.
   FutureEither<void> forgotPassword({
     required String email,
+  });
+
+  /// Confirms the code sent to the user's ZetraMail inbox and sets a new password.
+  FutureEither<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
   });
 
   /// Sign out the current user
