@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
@@ -12,18 +10,45 @@ import 'package:nai/src/features/auth/domain/entities/user.dart';
 import 'package:nai/src/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final _storage = const FlutterSecureStorage();
-
-  final String baseUrl = "https://zetra-backend.onrender.com/api/auth";
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   final _authStateController = StreamController<AppUser?>.broadcast();
 
-  AppUser _mapBackendUser(Map<String, dynamic> json) {
+  AuthRepositoryImpl() {
+    _supabase.auth.onAuthStateChange.listen((data) async {
+      final session = data.session;
+      if (session == null) {
+        _authStateController.add(null);
+        return;
+      }
+      final user = await _fetchAppUser(session.user.id);
+      _authStateController.add(user);
+    });
+  }
+
+  Future<AppUser?> _fetchAppUser(String userId) async {
+    try {
+      final profile = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (profile == null) return null;
+
+      return _mapProfile(profile);
+    } catch (e) {
+      debugPrint("_fetchAppUser error: $e");
+      return null;
+    }
+  }
+
+  AppUser _mapProfile(Map<String, dynamic> json) {
     return AppUser(
       id: json["id"].toString(),
-      email: json["email"] ?? "",
-      name: json["username"],
-      photoUrl: json["photoUrl"],
+      email: json["zetramail"] ?? "",
+      name: json["full_name"] ?? json["username"],
+      photoUrl: json["photo_url"],
       zetraId: json["zetra_id"],
       zetraMail: json["zetramail"],
       verified: json["verified"] == true,
@@ -39,55 +64,29 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final url = "$baseUrl/login";
+      debugPrint("===== LOGIN (Supabase) =====");
+      debugPrint(email);
 
-      debugPrint("===== LOGIN REQUEST =====");
-      debugPrint(url);
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: const {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: jsonEncode({
-          "identifier": email,
-          "password": password,
-        }),
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
 
-      debugPrint("===== LOGIN RESPONSE =====");
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        await _storage.write(
-          key: "access_token",
-          value: data["access_token"],
-        );
-
-        await _storage.write(
-          key: "refresh_token",
-          value: data["refresh_token"],
-        );
-
-        await _storage.write(
-          key: "user",
-          value: jsonEncode(data["user"]),
-        );
-
-        debugPrint("Access Token Saved");
-        debugPrint(data["access_token"]);
-
-        final user = _mapBackendUser(data["user"]);
-        _authStateController.add(user);
-
-        return right(user);
+      final user = response.user;
+      if (user == null) {
+        return left(ServerFailure("Invalid ZetraMail or password."));
       }
 
-      return left(ServerFailure(response.body));
+      final appUser = await _fetchAppUser(user.id);
+      if (appUser == null) {
+        return left(ServerFailure("Could not load your profile. Please try again."));
+      }
+
+      _authStateController.add(appUser);
+      return right(appUser);
+    } on AuthException catch (e) {
+      debugPrint("Login AuthException: ${e.message}");
+      return left(ServerFailure(e.message));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
@@ -101,57 +100,45 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final url = "$baseUrl/register";
+      debugPrint("===== SIGNUP (Supabase) =====");
+      debugPrint(email);
 
-      debugPrint("===== SIGNUP REQUEST =====");
-      debugPrint(url);
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: const {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          "full_name": name,
         },
-        body: jsonEncode({
-          "username": name,
-          "email": email,
-          "password": password,
-        }),
       );
 
-      debugPrint("===== SIGNUP RESPONSE =====");
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Body: ${response.body}");
-
-      if (response.statusCode == 200 ||
-          response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-
-        await _storage.write(
-          key: "access_token",
-          value: data["access_token"],
-        );
-
-        await _storage.write(
-          key: "refresh_token",
-          value: data["refresh_token"],
-        );
-
-        await _storage.write(
-          key: "user",
-          value: jsonEncode(data["user"]),
-        );
-
-        debugPrint("Access Token Saved");
-        debugPrint(data["access_token"]);
-
-        final user = _mapBackendUser(data["user"]);
-        _authStateController.add(user);
-
-        return right(user);
+      final user = response.user;
+      if (user == null) {
+        return left(ServerFailure("Could not create your account. Please try again."));
       }
 
-      return left(ServerFailure(response.body));
+      AppUser? appUser = await _fetchAppUser(user.id);
+
+      appUser ??= AppUser(
+        id: user.id,
+        email: email,
+        name: name,
+        photoUrl: null,
+        zetraId: null,
+        zetraMail: email,
+        verified: false,
+      );
+
+      try {
+        await _supabase.rpc('request_otp');
+      } catch (e) {
+        debugPrint("request_otp error: $e");
+      }
+
+      _authStateController.add(appUser);
+      return right(appUser);
+    } on AuthException catch (e) {
+      debugPrint("SignUp AuthException: ${e.message}");
+      return left(ServerFailure(e.message));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
@@ -163,22 +150,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/forgot-password"),
-        headers: const {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: jsonEncode({
-          "email": email,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        return right(null);
-      }
-
-      return left(ServerFailure(response.body));
+      await _supabase.auth.resetPasswordForEmail(email);
+      return right(null);
+    } on AuthException catch (e) {
+      debugPrint("forgotPassword AuthException: ${e.message}");
+      return left(ServerFailure(e.message));
     } catch (e) {
       return left(ServerFailure(e.toString()));
     }
@@ -186,45 +162,31 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   FutureEither<void> logout() async {
-    await _storage.deleteAll();
-    _authStateController.add(null);
-    return right(null);
+    try {
+      await _supabase.auth.signOut();
+      _authStateController.add(null);
+      return right(null);
+    } on AuthException catch (e) {
+      return left(ServerFailure(e.message));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
   }
 
   @override
   FutureEither<AppUser?> checkAuthState() async {
     try {
-      final token = await _storage.read(key: "access_token");
+      final session = _supabase.auth.currentSession;
 
-      debugPrint("========== CHECK AUTH ==========");
-      debugPrint("Stored Token:");
-      debugPrint(token);
+      debugPrint("========== CHECK AUTH (Supabase) ==========");
+      debugPrint(session?.user.id ?? "No session");
 
-      if (token == null || token.isEmpty) {
-        debugPrint("No token found.");
+      if (session == null) {
         return right(null);
       }
 
-      final response = await http.get(
-        Uri.parse("$baseUrl/me"),
-        headers: {
-          "Authorization": "Bearer $token",
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-      );
-
-      debugPrint("===== /me RESPONSE =====");
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Headers: ${response.headers}");
-      debugPrint("Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return right(_mapBackendUser(data));
-      }
-
-      return right(null);
+      final appUser = await _fetchAppUser(session.user.id);
+      return right(appUser);
     } catch (e) {
       debugPrint("checkAuthState Exception:");
       debugPrint(e.toString());
@@ -237,43 +199,32 @@ class AuthRepositoryImpl implements AuthRepository {
     required String code,
   }) async {
     try {
-      final token = await _storage.read(key: "access_token");
-      if (token == null || token.isEmpty) {
+      final session = _supabase.auth.currentSession;
+      if (session == null) {
         return left(ServerFailure("You're not signed in. Please log in again."));
       }
 
-      final response = await http.post(
-        Uri.parse("$baseUrl/verify"),
-        headers: {
-          "Authorization": "Bearer $token",
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({"code": code}),
-      );
+      final result = await _supabase.rpc('verify_otp', params: {"p_code": code});
 
-      debugPrint("===== VERIFY RESPONSE =====");
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Body: ${response.body}");
+      debugPrint("===== VERIFY RESPONSE (Supabase) =====");
+      debugPrint(result.toString());
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      final bool success = result == true;
 
-        await _storage.write(key: "user", value: jsonEncode(data));
-
-        final user = _mapBackendUser(data);
-        _authStateController.add(user);
-
-        return right(user);
+      if (!success) {
+        return left(ServerFailure("Invalid or expired code. Please try again."));
       }
 
-      String message = "Invalid or expired code. Please try again.";
-      try {
-        final err = jsonDecode(response.body);
-        if (err["error"] != null) message = err["error"].toString();
-      } catch (_) {}
+      final appUser = await _fetchAppUser(session.user.id);
+      if (appUser == null) {
+        return left(ServerFailure("Could not load your profile. Please try again."));
+      }
 
-      return left(ServerFailure(message));
+      _authStateController.add(appUser);
+      return right(appUser);
+    } on PostgrestException catch (e) {
+      debugPrint("verifyCode PostgrestException: ${e.message}");
+      return left(ServerFailure(e.message));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
@@ -283,29 +234,19 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   FutureEither<void> resendCode() async {
     try {
-      final token = await _storage.read(key: "access_token");
-      if (token == null || token.isEmpty) {
+      final session = _supabase.auth.currentSession;
+      if (session == null) {
         return left(ServerFailure("You're not signed in. Please log in again."));
       }
 
-      final response = await http.post(
-        Uri.parse("$baseUrl/resend-code"),
-        headers: {
-          "Authorization": "Bearer $token",
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-      );
+      await _supabase.rpc('request_otp');
 
-      debugPrint("===== RESEND CODE RESPONSE =====");
-      debugPrint("Status: ${response.statusCode}");
-      debugPrint("Body: ${response.body}");
+      debugPrint("===== RESEND CODE (Supabase) =====");
 
-      if (response.statusCode == 200) {
-        return right(null);
-      }
-
-      return left(ServerFailure(response.body));
+      return right(null);
+    } on PostgrestException catch (e) {
+      debugPrint("resendCode PostgrestException: ${e.message}");
+      return left(ServerFailure(e.message));
     } catch (e) {
       return left(ServerFailure(e.toString()));
     }
