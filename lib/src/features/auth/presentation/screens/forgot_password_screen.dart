@@ -2,6 +2,7 @@ import 'package:nai/src/imports/core_imports.dart';
 import 'package:nai/src/imports/packages_imports.dart';
 
 import 'package:nai/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nai/src/features/auth/presentation/screens/reset_password_screen.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -13,6 +14,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -22,25 +24,41 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authControllerProvider);
-
     final cs = context.theme.colorScheme;
     final tt = context.theme.textTheme;
 
     Future<void> handleForgotPassword() async {
       if (!(_formKey.currentState?.validate() ?? false)) return;
-      
 
-      ref.read(authControllerProvider.notifier).forgotPassword(
-        context: context, 
-        email: _emailController.text,
+      setState(() => _isSubmitting = true);
+
+      final repository = ref.read(authRepositoryProvider);
+      final email = _emailController.text.trim();
+      final result = await repository.forgotPassword(email: email);
+
+      setState(() => _isSubmitting = false);
+
+      if (!mounted) return;
+
+      result.fold(
+        (failure) {
+          showToast(context, message: failure.message, status: 'error');
+        },
+        (_) {
+          showToast(context, message: 'A code was sent to your ZetraMail', status: 'success');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ResetPasswordScreen(email: email),
+            ),
+          );
+        },
       );
     }
 
     return _ForgotPasswordView(
       formKey: _formKey,
       emailController: _emailController,
-      isLoading: isLoading,
+      isLoading: _isSubmitting,
       onForgotPassword: handleForgotPassword,
       cs: cs,
       tt: tt,
@@ -93,22 +111,22 @@ class _ForgotPasswordView extends StatelessWidget {
                   child: Column(
                     children: [
                       AppTextField(
-  controller: emailController,
-  enabled: !isLoading,
-  label: 'ZetraMail',
-  hint: 'username@zetramail.com',
-  keyboardType: TextInputType.emailAddress,
-  prefixIcon: const Icon(IconsaxPlusBold.sms),
-  validator: (v) {
-    if (AppUtils.isBlank(v)) {
-      return 'Please enter your ZetraMail';
-    }
-    if (!AppUtils.isValidEmail(v!)) {
-      return 'Enter a valid ZetraMail address';
-    }
-    return null;
-  },
-),
+                        controller: emailController,
+                        enabled: !isLoading,
+                        label: 'ZetraMail',
+                        hint: 'username@zetramail.ng',
+                        keyboardType: TextInputType.emailAddress,
+                        prefixIcon: const Icon(IconsaxPlusBold.sms),
+                        validator: (v) {
+                          if (AppUtils.isBlank(v)) {
+                            return 'Please enter your ZetraMail';
+                          }
+                          if (!AppUtils.isValidEmail(v!)) {
+                            return 'Enter a valid ZetraMail address';
+                          }
+                          return null;
+                        },
+                      ),
                       SizedBox(height: AppSpacing.lg.h),
                       AppButton(
                         label: 'auth.send_reset_link'.tr(),
