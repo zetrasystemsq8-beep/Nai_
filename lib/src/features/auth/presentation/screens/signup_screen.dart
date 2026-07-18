@@ -122,34 +122,31 @@ class _SignupView extends StatelessWidget {
                   child: Column(
                     children: [
                       AppTextField(
-  controller: emailController,
-  enabled: !isLoading,
-  label: 'ZetraMail',
-  hint: 'username@zetramail.com',
-  keyboardType: TextInputType.emailAddress,
-  prefixIcon: const Icon(IconsaxPlusBold.sms),
-  validator: (v) {
-    if (AppUtils.isBlank(v)) {
-      return 'Please enter your ZetraMail';
-    }
-    if (!AppUtils.isValidEmail(v!)) {
-      return 'Enter a valid ZetraMail address';
-    }
-    return null;
-  },
-),
+                        controller: nameController,
+                        enabled: !isLoading,
+                        label: 'auth.full_name'.tr(),
+                        prefixIcon: const Icon(IconsaxPlusBold.user),
+                        validator: (v) {
+                          if (AppUtils.isBlank(v)) {
+                            return 'auth.full_name_required'.tr();
+                          }
+                          return null;
+                        },
+                      ),
                       SizedBox(height: AppSpacing.md.h),
                       AppTextField(
                         controller: emailController,
                         enabled: !isLoading,
-                        label: 'auth.email'.tr(),
+                        label: 'ZetraMail',
+                        hint: 'username@zetramail.ng',
+                        keyboardType: TextInputType.emailAddress,
                         prefixIcon: const Icon(IconsaxPlusBold.sms),
                         validator: (v) {
                           if (AppUtils.isBlank(v)) {
-                            return 'auth.email_required'.tr();
+                            return 'Please enter your ZetraMail';
                           }
                           if (!AppUtils.isValidEmail(v!)) {
-                            return 'auth.email_invalid'.tr();
+                            return 'Enter a valid ZetraMail address';
                           }
                           return null;
                         },
