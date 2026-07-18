@@ -60,20 +60,34 @@ class AuthRepositoryImpl implements AuthRepository {
 
   /// Shared by login() and signUp(): both just authenticate against an
   /// existing ZetraMail + password (NAI never creates accounts — Zetra ID
-  /// does). If the account is found but not yet verified for NAI, a fresh
-  /// OTP is sent automatically so it's waiting when the router redirects
-  /// the user to VerifyCodeScreen.
+  /// does). The ZetraMail address isn't the real Supabase Auth email, so
+  /// it's resolved to the internal auth email first via resolve_login_email,
+  /// the same RPC Zetra ID's own login screen uses. If the account is found
+  /// but not yet verified for NAI, a fresh OTP is sent automatically so
+  /// it's waiting when the router redirects the user to VerifyCodeScreen.
   Future<Either<Failure, AppUser>> _authenticate({
     required String email,
     required String password,
     required String notFoundMessage,
   }) async {
     try {
-      debugPrint("===== AUTHENTICATE (Supabase) =====");
+      debugPrint("===== RESOLVE LOGIN EMAIL (Supabase) =====");
       debugPrint(email);
 
+      final resolvedEmail = await _supabase.rpc(
+        'resolve_login_email',
+        params: {"p_identifier": email},
+      ) as String?;
+
+      if (resolvedEmail == null || resolvedEmail.isEmpty) {
+        return left(ServerFailure(notFoundMessage));
+      }
+
+      debugPrint("===== AUTHENTICATE (Supabase) =====");
+      debugPrint(resolvedEmail);
+
       final response = await _supabase.auth.signInWithPassword(
-        email: email,
+        email: resolvedEmail,
         password: password,
       );
 
@@ -100,6 +114,9 @@ class AuthRepositoryImpl implements AuthRepository {
     } on AuthException catch (e) {
       debugPrint("Authenticate AuthException: ${e.message}");
       return left(ServerFailure(notFoundMessage));
+    } on PostgrestException catch (e) {
+      debugPrint("Authenticate PostgrestException: ${e.message}");
+      return left(ServerFailure(notFoundMessage));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
@@ -110,19 +127,11 @@ class AuthRepositoryImpl implements AuthRepository {
   FutureEither<AppUser> login({
     required String email,
     required String password,
-  }) async {
-    final result = await _supabase
-        .from('profiles')
-        .select('auth_email')
-        .eq('zetramail', email)
-        .maybeSingle();
-
-    final authEmail = result?['auth_email'] ?? email;
-
+  }) {
     return _authenticate(
-      email: authEmail,
+      email: email,
       password: password,
-      notFoundMessage: "No ZetraMail account found...",
+      notFoundMessage: "Invalid ZetraMail or password.",
     );
   }
 
