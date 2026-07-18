@@ -108,31 +108,24 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   FutureEither<AppUser> login({
-  required String email,
-  required String password,
-}) async {
-  final result = await _supabase
-      .from('profiles')
-      .select('auth_email')
-      .eq('zetramail', email)
-      .maybeSingle();
+    required String email,
+    required String password,
+  }) async {
+    final result = await _supabase
+        .from('profiles')
+        .select('auth_email')
+        .eq('zetramail', email)
+        .maybeSingle();
 
-  final authEmail = result?['auth_email'] ?? email;
+    final authEmail = result?['auth_email'] ?? email;
 
-  final result = await _supabase
-    .from('profiles')
-    .select('auth_email')
-    .eq('zetramail', email)
-    .maybeSingle();
-
-final authEmail = result?['auth_email'] ?? email;
-
-return _authenticate(
-  email: authEmail,
-  password: password,
-  notFoundMessage: "No ZetraMail account found...",
-);
+    return _authenticate(
+      email: authEmail,
+      password: password,
+      notFoundMessage: "No ZetraMail account found...",
+    );
   }
+
   @override
   FutureEither<AppUser> signUp({
     required String name,
