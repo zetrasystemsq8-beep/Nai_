@@ -150,10 +150,47 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
   }) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
+      debugPrint("===== REQUEST PASSWORD RESET (Supabase) =====");
+      debugPrint(email);
+
+      await _supabase.rpc('request_password_reset', params: {
+        "p_zetramail": email,
+      });
+
       return right(null);
-    } on AuthException catch (e) {
-      debugPrint("forgotPassword AuthException: ${e.message}");
+    } on PostgrestException catch (e) {
+      debugPrint("forgotPassword PostgrestException: ${e.message}");
+      return left(ServerFailure(e.message));
+    } catch (e) {
+      return left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  FutureEither<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      debugPrint("===== CONFIRM PASSWORD RESET (Supabase) =====");
+      debugPrint(email);
+
+      final result = await _supabase.rpc('confirm_password_reset', params: {
+        "p_zetramail": email,
+        "p_code": code,
+        "p_new_password": newPassword,
+      });
+
+      final bool success = result == true;
+
+      if (!success) {
+        return left(ServerFailure("Invalid or expired code. Please try again."));
+      }
+
+      return right(null);
+    } on PostgrestException catch (e) {
+      debugPrint("confirmPasswordReset PostgrestException: ${e.message}");
       return left(ServerFailure(e.message));
     } catch (e) {
       return left(ServerFailure(e.toString()));
