@@ -58,13 +58,18 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Stream<AppUser?> get onAuthStateChanged => _authStateController.stream;
 
-  @override
-  FutureEither<AppUser> login({
+  /// Shared by login() and signUp(): both just authenticate against an
+  /// existing ZetraMail + password (NAI never creates accounts — Zetra ID
+  /// does). If the account is found but not yet verified for NAI, a fresh
+  /// OTP is sent automatically so it's waiting when the router redirects
+  /// the user to VerifyCodeScreen.
+  Future<Either<Failure, AppUser>> _authenticate({
     required String email,
     required String password,
+    required String notFoundMessage,
   }) async {
     try {
-      debugPrint("===== LOGIN (Supabase) =====");
+      debugPrint("===== AUTHENTICATE (Supabase) =====");
       debugPrint(email);
 
       final response = await _supabase.auth.signInWithPassword(
@@ -74,7 +79,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final user = response.user;
       if (user == null) {
-        return left(ServerFailure("Invalid ZetraMail or password."));
+        return left(ServerFailure(notFoundMessage));
       }
 
       final appUser = await _fetchAppUser(user.id);
@@ -82,11 +87,19 @@ class AuthRepositoryImpl implements AuthRepository {
         return left(ServerFailure("Could not load your profile. Please try again."));
       }
 
+      if (!appUser.verified) {
+        try {
+          await _supabase.rpc('request_otp');
+        } catch (e) {
+          debugPrint("request_otp error: $e");
+        }
+      }
+
       _authStateController.add(appUser);
       return right(appUser);
     } on AuthException catch (e) {
-      debugPrint("Login AuthException: ${e.message}");
-      return left(ServerFailure(e.message));
+      debugPrint("Authenticate AuthException: ${e.message}");
+      return left(ServerFailure(notFoundMessage));
     } catch (e) {
       debugPrint(e.toString());
       return left(ServerFailure(e.toString()));
@@ -94,49 +107,34 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  FutureEither<AppUser> login({
+    required String email,
+    required String password,
+  }) {
+    return _authenticate(
+      email: email,
+      password: password,
+      notFoundMessage: "Invalid ZetraMail or password.",
+    );
+  }
+
+  @override
   FutureEither<AppUser> signUp({
     required String name,
     required String email,
     required String password,
-  }) async {
-    try {
-      debugPrint("===== SIGNUP (authenticate existing ZetraMail) =====");
-      debugPrint(email);
-
-      // NAI never creates new accounts. Accounts only exist if they were
-      // created in the Zetra ID app. "Signing up" here means authenticating
-      // against an existing ZetraMail + password — if it's valid, this is
-      // effectively a login. If it's invalid, the ZetraMail doesn't exist
-      // yet (or the password is wrong) and we tell the user to create it
-      // in the Zetra ID app first.
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-
-      final user = response.user;
-      if (user == null) {
-        return left(ServerFailure(
-          "No ZetraMail account found. Please create your ZetraMail in the Zetra ID app first.",
-        ));
-      }
-
-      final appUser = await _fetchAppUser(user.id);
-      if (appUser == null) {
-        return left(ServerFailure("Could not load your profile. Please try again."));
-      }
-
-      _authStateController.add(appUser);
-      return right(appUser);
-    } on AuthException catch (e) {
-      debugPrint("SignUp AuthException: ${e.message}");
-      return left(ServerFailure(
-        "No ZetraMail account found. Please create your ZetraMail in the Zetra ID app first.",
-      ));
-    } catch (e) {
-      debugPrint(e.toString());
-      return left(ServerFailure(e.toString()));
-    }
+  }) {
+    // NAI never creates new accounts. Accounts only exist if they were
+    // created in the Zetra ID app. "Signing up" here means authenticating
+    // against an existing ZetraMail + password — if it's valid, this is
+    // effectively a login (with an automatic OTP send if unverified). If
+    // it's invalid, the ZetraMail doesn't exist yet and we tell the user
+    // to create it in the Zetra ID app first.
+    return _authenticate(
+      email: email,
+      password: password,
+      notFoundMessage: "No ZetraMail account found. Please create your ZetraMail in the Zetra ID app first.",
+    );
   }
 
   @override
