@@ -1,11 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/material.dart';
 
 import 'src/imports/core_imports.dart';
 import 'src/imports/packages_imports.dart';
 import 'src/app.dart';
 
-// ⚠️ PER-APP: change this for each of your 8 apps
+// ⚠️ ONLY THESE TWO LINES CHANGE PER APP
 const String kAppId = 'app_one';
 const String kCurrentVersion = '1.0.0';
 
@@ -37,11 +38,11 @@ Future<void> main() async {
       forceUpdateUrl = update['apk_url'] as String;
     }
   } catch (_) {
-    // Fail open: if the check itself fails (network, missing row, etc.),
-    // don't block app launch.
+    // If the check fails for any reason, don't block the app from launching.
   }
 
   if (forceUpdateUrl != null) {
+    FlutterNativeSplash.remove();
     runApp(_ForceUpdateApp(apkUrl: forceUpdateUrl));
     return;
   }
