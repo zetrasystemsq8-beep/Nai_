@@ -10,7 +10,7 @@ import '../domain/challenge.dart';
 class ChallengeGenerator {
   final Dio _dio = Dio();
   static const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _model = 'llama-3.3-70b-versatile';
+  static const _model = 'openai/gpt-oss-20b';
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
