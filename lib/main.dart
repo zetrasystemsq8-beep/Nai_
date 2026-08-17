@@ -28,11 +28,19 @@ Future<void> main() async {
   String? forceUpdateUrl;
 
   try {
-    final update = await Supabase.instance.client
-        .from('app_versions')
-        .select()
-        .eq('app_id', kAppId)
-        .single();
+    try {
+  final update = await Supabase.instance.client
+      .from('app_release_versions')
+      .select()
+      .eq('app_id', kAppId)
+      .single();
+
+  if (_isOutdated(kCurrentVersion, update['minimum_version'] as String)) {
+    forceUpdateUrl = update['apk_url'] as String;
+  }
+} catch (_) {
+  // If the check fails for any reason, don't block the app from launching.
+}
 
     if (_isOutdated(kCurrentVersion, update['minimum_version'] as String)) {
       forceUpdateUrl = update['apk_url'] as String;
