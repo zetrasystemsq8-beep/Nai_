@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 permissions:
-  contents: write   # needed to create releases
+  contents: write
 
 jobs:
   build:
