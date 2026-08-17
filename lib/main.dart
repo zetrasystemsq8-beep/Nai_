@@ -7,7 +7,7 @@ import 'src/imports/packages_imports.dart';
 import 'src/app.dart';
 
 // ⚠️ ONLY THESE TWO LINES CHANGE PER APP
-const String kAppId = 'app_one';
+const String kAppId = 'nai';
 const String kCurrentVersion = '1.0.0';
 
 Future<void> main() async {
@@ -28,19 +28,11 @@ Future<void> main() async {
   String? forceUpdateUrl;
 
   try {
-    try {
-  final update = await Supabase.instance.client
-      .from('app_release_versions')
-      .select()
-      .eq('app_id', kAppId)
-      .single();
-
-  if (_isOutdated(kCurrentVersion, update['minimum_version'] as String)) {
-    forceUpdateUrl = update['apk_url'] as String;
-  }
-} catch (_) {
-  // If the check fails for any reason, don't block the app from launching.
-}
+    final update = await Supabase.instance.client
+        .from('app_release_versions')
+        .select()
+        .eq('app_id', kAppId)
+        .single();
 
     if (_isOutdated(kCurrentVersion, update['minimum_version'] as String)) {
       forceUpdateUrl = update['apk_url'] as String;
