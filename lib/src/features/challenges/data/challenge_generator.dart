@@ -10,7 +10,7 @@ import '../domain/challenge.dart';
 class ChallengeGenerator {
   final Dio _dio = Dio();
   static const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _model = 'openai/gpt-oss-20b';
+  static const _model = 'llama-3.1-8b-instant'; // ✅ matches your working chat engine
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
@@ -20,6 +20,18 @@ class ChallengeGenerator {
     if (roll < 75) return ChallengeDifficulty.medium;
     if (roll < 95) return ChallengeDifficulty.hard;
     return ChallengeDifficulty.expert;
+  }
+
+  /// Strips ```json ... ``` or ``` ... ``` fences some models add around JSON.
+  String _stripJsonFences(String raw) {
+    var s = raw.trim();
+    if (s.startsWith('```')) {
+      s = s.replaceFirst(RegExp(r'^```(json)?'), '').trim();
+      if (s.endsWith('```')) {
+        s = s.substring(0, s.length - 3).trim();
+      }
+    }
+    return s;
   }
 
   Future<Challenge> generate() async {
@@ -55,8 +67,9 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
         },
       );
 
-      final content = response.data['choices']?[0]?['message']?['content'] as String?;
-      final parsed = jsonDecode(content ?? '{}') as Map<String, dynamic>;
+      final rawContent = response.data['choices']?[0]?['message']?['content'] as String?;
+      final cleaned = _stripJsonFences(rawContent ?? '{}');
+      final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
 
       return Challenge(
         id: const Uuid().v4(),
@@ -67,6 +80,8 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
         createdAt: DateTime.now(),
       );
     } on DioException catch (e) {
+      // ignore: avoid_print
+      print('ChallengeGenerator DioException: ${e.response?.statusCode} ${e.response?.data}');
       final isOffline = e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout;
@@ -81,6 +96,8 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
         createdAt: DateTime.now(),
       );
     } catch (e) {
+      // ignore: avoid_print
+      print('ChallengeGenerator parse error: $e');
       return Challenge(
         id: const Uuid().v4(),
         category: category,
@@ -146,6 +163,8 @@ Respond ONLY with the single word "true" or "false", nothing else.
       final content = (response.data['choices']?[0]?['message']?['content'] as String? ?? '').trim().toLowerCase();
       return content.contains('true');
     } catch (e) {
+      // ignore: avoid_print
+      print('ChallengeGenerator checkAnswer error: $e');
       return false;
     }
   }
