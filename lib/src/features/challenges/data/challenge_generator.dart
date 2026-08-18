@@ -10,7 +10,7 @@ import '../domain/challenge.dart';
 class ChallengeGenerator {
   final Dio _dio = Dio();
   static const _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _model = 'llama-3.1-8b-instant'; // ✅ matches your working chat engine
+  static const _model = 'openai/gpt-oss-20b';
 
   String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
 
@@ -55,7 +55,7 @@ class ChallengeGenerator {
             {
               'role': 'system',
               'content': '''
-Generate one ${difficulty.label} difficulty "$category" challenge question for a Nigerian app. Respond ONLY with valid JSON, no markdown, no preamble, in this exact format:
+Generate one ${difficulty.label} difficulty "$category" challenge question for a Nigerian app. Respond ONLY with valid JSON in this exact format:
 {"question": "the question text", "answer": "the exact correct short answer"}
 The answer must be short (a word, number, or short phrase) so it can be matched against user input. Do not include the answer inside the question text.
 ''',
@@ -63,7 +63,9 @@ The answer must be short (a word, number, or short phrase) so it can be matched 
             {'role': 'user', 'content': 'Generate the challenge now.'},
           ],
           'temperature': 0.9,
-          'max_tokens': 300,
+          'max_tokens': 700,
+          'reasoning_effort': 'low',
+          'response_format': {'type': 'json_object'},
         },
       );
 
@@ -156,7 +158,8 @@ Respond ONLY with the single word "true" or "false", nothing else.
             },
           ],
           'temperature': 0.0,
-          'max_tokens': 10,
+          'max_tokens': 200,
+          'reasoning_effort': 'low',
         },
       );
 
